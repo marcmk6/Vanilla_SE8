@@ -1,5 +1,6 @@
 import re
 import index
+import text_processing
 
 
 def _is_operand(exp: str) -> bool:
@@ -7,7 +8,7 @@ def _is_operand(exp: str) -> bool:
 
 
 # ref: https://runestone.academy/runestone/books/published/pythonds/BasicDS/InfixPrefixandPostfixExpressions.html
-def infix_2_postfix(infix_expr) -> str:
+def infix_2_postfix(infix_expr: str) -> str:
     precedence = {'OR': 1, 'AND': 2, 'AND_NOT': 3, '(': 0}
 
     operator_stack = []
@@ -88,10 +89,6 @@ def and_not_operation(l1: list, l2: list) -> list:
     return result
 
 
-def get_docid(idx: index, keyword: str):
-    return idx.get(keyword)
-
-
 def perform_bool_operation(operator: str, operand_1: list, operand_2: list) -> list:
     if operator == 'OR':
         r = or_operation(operand_1, operand_2)
@@ -102,8 +99,16 @@ def perform_bool_operation(operator: str, operand_1: list, operand_2: list) -> l
     return r
 
 
-def eval(idx: index, query: str) -> list:
-    postfix_expr_tokens = infix_2_postfix(query).split()
+def eval(idx: index, raw_query: str) -> list:
+
+    tmp = []
+    for t in raw_query.split():
+        if _is_operand(t):
+            t = text_processing.process(t)[0]
+        tmp.append(t)
+
+    processed_query = ' '.join(tmp)
+    postfix_expr_tokens = infix_2_postfix(processed_query).split()
 
     # Single word query
     if len(postfix_expr_tokens) == 1:
@@ -116,7 +121,7 @@ def eval(idx: index, query: str) -> list:
         if _is_operand(expr_token):  # token is keyword
             operand_stack.append(expr_token)
 
-        else:   # token is bool operator
+        else:  # token is bool operator
 
             if type(operand_stack[-1]) is str:
                 operand_2 = idx.get(operand_stack.pop())

@@ -2,26 +2,26 @@ import re
 import nltk
 from nltk.stem.porter import *
 
-stemmer = PorterStemmer()
+STEMMER = PorterStemmer()
 hyphen_re = re.compile("-")
 period_re = re.compile("(?<=[a-zA-Z])\.(?=[a-zA-Z])")
 
 
-def rm_stop_words(tokens):
+def rm_stop_words(tokens: list) -> list:
     return [t for t in tokens if t not in nltk.corpus.stopwords.words('english')]
 
 
-def stem(tokens):
-    return [stemmer.stem(t) for t in tokens]
+def stem(tokens: list) -> list:
+    return [STEMMER.stem(t) for t in tokens]
 
 
-def normalize(s):
+def normalize(s: str) -> str:
     s = hyphen_re.sub(' ', s)  # low-cost -> low cost
     s = period_re.sub('', s)  # U.S.A -> USA
     return s
 
 
-def process(string, stop_words_removal, stemming, normalization):
+def process(string: str, stop_words_removal=True, stemming=True, normalization=True) -> list:
     if normalization:
         string = normalize(string)
     tokens = nltk.word_tokenize(string)

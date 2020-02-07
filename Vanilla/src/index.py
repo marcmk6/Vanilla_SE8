@@ -1,7 +1,7 @@
 import csv
 import dictionary
 import json
-import text_process
+import text_processing
 
 
 class _Document:
@@ -57,7 +57,7 @@ def cal_tf_df(terms, documents):
 
     for doc in documents:
         doc_id = doc.doc_id
-        search_field = ' '.join(text_process.process(doc.title + doc.content, True, True, True))
+        search_field = ' '.join(text_processing.process(doc.title + doc.content, True, True, True))
         for term in terms:
             count = search_field.count(term)
             if count > 0:

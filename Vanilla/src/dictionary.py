@@ -1,5 +1,5 @@
 import csv
-import text_process
+import text_processing
 
 
 # Module 3 - Dictionary building
@@ -16,8 +16,8 @@ def build_vocabulary(corpus, stop_words_removal=True, stemming=True, normalizati
             to_be_processed = [title + content]
 
             for e in to_be_processed:
-                processed_tokens = text_process.process(e, stop_words_removal=stop_words_removal, stemming=stemming,
-                                                        normalization=normalization)
+                processed_tokens = text_processing.process(e, stop_words_removal=stop_words_removal, stemming=stemming,
+                                                           normalization=normalization)
                 for term in processed_tokens:
                     terms.add(term)
 
