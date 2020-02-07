@@ -6,7 +6,7 @@ src = '../UofO_Courses.html'
 out = '../course_corpus.csv'
 
 
-def separate_files(src_file):
+def _separate_files(src_file):
     end = '</html>'
     with open(src_file, 'r') as f:
         files = f.read().split(end)
@@ -46,7 +46,7 @@ def preprocess(src_file):
 
 
 if __name__ == "__main__":
-    files = separate_files(src)
+    files = _separate_files(src)
     # for file in files:
     #     preprocess(file)
     preprocess(files[3])

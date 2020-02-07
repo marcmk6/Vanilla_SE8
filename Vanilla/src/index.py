@@ -12,7 +12,7 @@ class _Document:
         self.content = content
 
 
-class _Index:
+class Index:
 
     def __init__(self, df_dict, docid_tf_dict):
         self.df_dict = df_dict
@@ -27,8 +27,13 @@ class _Index:
         with open(index_file, 'r') as f:
             r = json.load(f)
 
-        return _Index(r['DF_DICT'], r['DOCID_TF_DICT'])
+        return Index(r['DF_DICT'], r['DOCID_TF_DICT'])
 
+    def get(self, keyword: str) -> list:
+        if keyword in self.docid_tf_dict.keys():
+            return list(self.docid_tf_dict[keyword].keys())
+        else:
+            return []
 
 def read_create_documents(corpus):
     docs = []
@@ -72,8 +77,8 @@ if __name__ == '__main__':
     # print(tf)
     # print({k: v for k, v in sorted(df.items(), key=lambda item: item[1], reverse=True)})
 
-    idxfile = _Index(df_dict = df, docid_tf_dict=tf)
+    idxfile = Index(df_dict = df, docid_tf_dict=tf)
     idxfile.save('INDEX')
 
-    idxf2 = _Index.load('INDEX')
-    print(idxf2.df_dict)
+    idxf2 = Index.load('INDEX')
+    print(idxf2.get('plane'))
