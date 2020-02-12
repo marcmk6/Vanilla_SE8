@@ -24,9 +24,16 @@ def normalize(s: str) -> str:
 def process(string: str, stop_words_removal=True, stemming=True, normalization=True) -> list:
     if normalization:
         string = normalize(string)
+
     tokens = nltk.word_tokenize(string)
+
     if stop_words_removal:
         tokens = rm_stop_words(tokens)
+
     if stemming:
         tokens = stem(tokens)
+
+    # In case query contains only stopwords and they are removed
+    if len(tokens) == 0:
+        return ['']
     return tokens

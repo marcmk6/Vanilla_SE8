@@ -10,7 +10,7 @@ SAVING_KEY_DOC_ID = 'DOC_ID'
 
 
 class Index:
-    class Document:
+    class _Document:
 
         def __init__(self, doc_id, title, content):
             self.doc_id = doc_id
@@ -63,7 +63,7 @@ class Index:
                 doc_id = row[0]
                 title = row[1]
                 content = row[2]
-                docs.append(Index.Document(doc_id, title, content))
+                docs.append(Index._Document(doc_id, title, content))
         return docs
 
     @staticmethod
@@ -97,27 +97,31 @@ class Index:
         :param n: number of documents
         :return: tf-idf in numpy.ndarray format, dimension (d,v)
         """
-        return np.log10(n / df_arr) * np.log10(1 + tf_arr)
+        return np.log10(n / (df_arr + 1)) * np.log10(1 + tf_arr)
 
     def _get_df_matrix(self) -> np.ndarray:
         """
+        Calculate raw document frequency
         :return: numpy.ndarray (d, v)
         """
         vocabulary_size = len(self.df_dict.keys())
 
         df_lst = list(self.df_dict.values())
 
-        tmp = df_lst * self.doc_count
+        tmp = []
+        for _ in range(0, self.doc_count):
+            tmp.append(df_lst)
         tmp = np.asarray(tmp).reshape((self.doc_count, vocabulary_size))
 
         return tmp
 
     def _get_tf_matrix(self) -> np.ndarray:
         """
+        Calculate raw term frequency
         :return:  numpy.ndarray (d,v)
         """
 
-        def _get_idx(doc_id: str) -> int:
+        def _get_doc_idx(doc_id: str) -> int:
             return self.doc_ids[SAVING_KEY_DOC_ID].index(doc_id)
 
         vocabulary_size = len(self.df_dict.keys())
@@ -128,11 +132,13 @@ class Index:
             col = [0] * self.doc_count
             tmp = self.docid_tf_dict[term]
             for doc_id, tf in tmp.items():
-                idx = _get_idx(doc_id)
+                idx = _get_doc_idx(doc_id)
                 col[idx] = tf
-            lst += col
+            lst.append(col)
 
-        return np.asarray(lst).reshape((self.doc_count, vocabulary_size))
+        tf_matrix = np.asarray(lst)
+        tf_matrix = np.transpose(tf_matrix)
+        return tf_matrix
 
     def save(self, out):
         with open(out, 'w') as f:
@@ -160,6 +166,7 @@ if __name__ == '__main__':
     # print({k: v for k, v in sorted(df.items(), key=lambda item: item[1], reverse=True)})
 
     # idxf2 = Index(corpus = corpus_path)
+    # idxf2.save('idxtest')
 
-    idx = Index.load('INDEX')
-    print(idx.get('plane'))
+    idx = Index.load('idxtest')
+    print(idx.get('csi'))
