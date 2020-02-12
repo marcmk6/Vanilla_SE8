@@ -88,24 +88,6 @@ class Index:
 
         return docid_tf_dict, df_dict
 
-    def save(self, out):
-        with open(out, 'w') as f:
-            f.write(json.dumps({SAVING_KEY_DF_DICT: self.df_dict, SAVING_KEY_DOCID_TF_DICT: self.docid_tf_dict,
-                                SAVING_KEY_DOC_ID: self.doc_ids}))
-
-    @staticmethod
-    def load(index_file):
-        with open(index_file, 'r') as f:
-            idx = json.load(f)
-        return Index(df_dict=idx[SAVING_KEY_DF_DICT], docid_tf_dict=idx[SAVING_KEY_DOCID_TF_DICT],
-                     doc_ids=idx[SAVING_KEY_DOC_ID])
-
-    def get(self, keyword: str) -> list:
-        if keyword in self.docid_tf_dict.keys():
-            return list(self.docid_tf_dict[keyword].keys())
-        else:
-            return []
-
     @staticmethod
     def _get_tf_idf_matrix(tf_arr: np.ndarray, df_arr: np.ndarray, n: int) -> np.ndarray:
         """
@@ -151,6 +133,24 @@ class Index:
             lst += col
 
         return np.asarray(lst).reshape((self.doc_count, vocabulary_size))
+
+    def save(self, out):
+        with open(out, 'w') as f:
+            f.write(json.dumps({SAVING_KEY_DF_DICT: self.df_dict, SAVING_KEY_DOCID_TF_DICT: self.docid_tf_dict,
+                                SAVING_KEY_DOC_ID: self.doc_ids}))
+
+    @staticmethod
+    def load(index_file):
+        with open(index_file, 'r') as f:
+            idx = json.load(f)
+        return Index(df_dict=idx[SAVING_KEY_DF_DICT], docid_tf_dict=idx[SAVING_KEY_DOCID_TF_DICT],
+                     doc_ids=idx[SAVING_KEY_DOC_ID])
+
+    def get(self, keyword: str) -> list:
+        if keyword in self.docid_tf_dict.keys():
+            return list(self.docid_tf_dict[keyword].keys())
+        else:
+            return []
 
 
 if __name__ == '__main__':

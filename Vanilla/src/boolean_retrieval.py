@@ -1,7 +1,6 @@
 import re
-import index
 import text_processing
-
+from index import Index
 
 def _is_operand(exp: str) -> bool:
     return re.search('\(|\)|AND|OR|AND_NOT', exp) is None
@@ -99,7 +98,7 @@ def perform_bool_operation(operator: str, operand_1: list, operand_2: list) -> l
     return r
 
 
-def query(idx: index, raw_query: str) -> list:
+def query(idx: Index, raw_query: str) -> list:
 
     tmp = []
     for t in raw_query.split():
@@ -143,6 +142,6 @@ if __name__ == "__main__":
     # print(infix_2_postfix("(*ge AND_NOT (man* OR health*))"))
     # print(and_not_operation([1, 2, 3], [1, 2, 4, 35]))
 
-    idxf2 = index.Index.load('INDEX')
+    idxf2 = Index.load('INDEX')
 
     print(query(idxf2, '( algorithm AND plane )'))
