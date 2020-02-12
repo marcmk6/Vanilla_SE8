@@ -32,7 +32,7 @@ def infix_2_postfix(infix_expr: str) -> str:
                 postfix_expr.append(top_token)
                 top_token = operator_stack.pop()
         else:
-            while (not len(operator_stack) == 0) and (precedence[operator_stack[-1]] >= precedence[token]):
+            while (len(operator_stack) != 0) and (precedence[operator_stack[-1]] >= precedence[token]):
                 postfix_expr.append(operator_stack.pop())
             operator_stack.append(token)
 
@@ -99,7 +99,7 @@ def perform_bool_operation(operator: str, operand_1: list, operand_2: list) -> l
     return r
 
 
-def eval(idx: index, raw_query: str) -> list:
+def query(idx: index, raw_query: str) -> list:
 
     tmp = []
     for t in raw_query.split():
@@ -145,4 +145,4 @@ if __name__ == "__main__":
 
     idxf2 = index.Index.load('INDEX')
 
-    print(eval(idxf2, 'algorithm AND plane'))
+    print(query(idxf2, '( algorithm AND plane )'))
