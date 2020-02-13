@@ -1,6 +1,7 @@
 import csv
 import dictionary
 import json
+import pickle
 import numpy as np
 import text_processing
 
@@ -17,6 +18,7 @@ class Index:
             self.title = title
             self.content = content
 
+    # TODO: Remove code for debugging
     def __init__(self, corpus=None, df_dict=None, docid_tf_dict=None, doc_ids=None):
         """
         The index can be either construct from a corpus or from dicts
@@ -86,6 +88,10 @@ class Index:
                     df_dict[term] += 1
                     docid_tf_dict[term][doc_id] = count
 
+        # Sort posting lists
+        for term in terms:
+            docid_tf_dict[term] = dict(sorted(docid_tf_dict[term].items()))
+
         return docid_tf_dict, df_dict
 
     @staticmethod
@@ -108,9 +114,7 @@ class Index:
 
         df_lst = list(self.df_dict.values())
 
-        tmp = []
-        for _ in range(0, self.doc_count):
-            tmp.append(df_lst)
+        tmp = [df_lst] * self.doc_count
         tmp = np.asarray(tmp).reshape((self.doc_count, vocabulary_size))
 
         return tmp
@@ -123,8 +127,6 @@ class Index:
 
         def _get_doc_idx(doc_id: str) -> int:
             return self.doc_ids[SAVING_KEY_DOC_ID].index(doc_id)
-
-        vocabulary_size = len(self.df_dict.keys())
 
         lst = []
         terms = self.df_dict.keys()
@@ -140,13 +142,15 @@ class Index:
         tf_matrix = np.transpose(tf_matrix)
         return tf_matrix
 
-    def save(self, out):
+    # TODO: Remove. Used for debugging.
+    def _save(self, out):
         with open(out, 'w') as f:
             f.write(json.dumps({SAVING_KEY_DF_DICT: self.df_dict, SAVING_KEY_DOCID_TF_DICT: self.docid_tf_dict,
                                 SAVING_KEY_DOC_ID: self.doc_ids}))
 
+    # TODO: Remove. Used for debugging.
     @staticmethod
-    def load(index_file):
+    def _load(index_file):
         with open(index_file, 'r') as f:
             idx = json.load(f)
         return Index(df_dict=idx[SAVING_KEY_DF_DICT], docid_tf_dict=idx[SAVING_KEY_DOCID_TF_DICT],
@@ -158,15 +162,35 @@ class Index:
         else:
             return []
 
+    def save(self, out) -> None:
+        """
+        Save the Index object by serializing
+        :param out: path to the output
+        :return: None
+        """
+        with open(out, 'wb') as f:
+            pickle.dump(self, f)
+
+    @staticmethod
+    def load(index_file):
+        """
+        Load the Index object
+        :param index_file: path to the index file
+        :return: index
+        """
+        with open(index_file, 'rb') as f:
+            index = pickle.load(f)
+        return index
+
 
 if __name__ == '__main__':
-    corpus_path = '../course_corpus.csv'
+    corpus_path = '../course_corpus_full.csv'
 
     # print(tf)
     # print({k: v for k, v in sorted(df.items(), key=lambda item: item[1], reverse=True)})
 
-    # idxf2 = Index(corpus = corpus_path)
-    # idxf2.save('idxtest')
+    idxf2 = Index(corpus=corpus_path)
+    idxf2._save('idx_full')
 
-    idx = Index.load('idxtest')
-    print(idx.get('csi'))
+    # idx = Index.load('idxtest')
+    # print(idx.get('csi'))

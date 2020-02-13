@@ -142,6 +142,6 @@ if __name__ == "__main__":
     # print(infix_2_postfix("(*ge AND_NOT (man* OR health*))"))
     # print(and_not_operation([1, 2, 3], [1, 2, 4, 35]))
 
-    idxf2 = Index.load('INDEX')
+    idxf2 = Index._load('idx_full')
 
-    print(query(idxf2, '( algorithm AND plane )'))
+    print(query(idxf2, 'query AND processing'))

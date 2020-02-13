@@ -20,7 +20,7 @@ def build_vocabulary(corpus, stop_words_removal=True, stemming=True, normalizati
                                                            normalization=normalization)
                 for term in processed_tokens:
                     terms.add(term)
-
+    terms = sorted(terms)
     return terms
 
 

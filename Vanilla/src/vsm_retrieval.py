@@ -33,7 +33,7 @@ def query(vectorized_query: np.ndarray, index: Index) -> list:
             pair = (doc_id, score)
             full_results.append(pair)
 
-    full_results = sorted(full_results, key=lambda tpl: tpl[1])
+    full_results = sorted(full_results, key=lambda tpl: tpl[1], reverse=True)
     top_results = []
     for i in range(0, min(len(full_results), DOC_RETRIEVAL_LIMIT)):
         top_results.append(full_results[i][0])
@@ -41,9 +41,9 @@ def query(vectorized_query: np.ndarray, index: Index) -> list:
 
 
 if __name__ == '__main__':
-    idx = Index.load('INDEX')
+    idx = Index._load('idx_full')
 
     # print(idx.df_dict)
-    vec = vectorize_query(index=idx, raw_query='the')
+    vec = vectorize_query(index=idx, raw_query='information system management')
     print(query(vec, idx))
     pass

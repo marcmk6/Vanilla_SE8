@@ -3,8 +3,8 @@ import nltk
 from nltk.stem.porter import *
 
 STEMMER = PorterStemmer()
-hyphen_re = re.compile("-")
-period_re = re.compile("(?<=[a-zA-Z])\.(?=[a-zA-Z])")
+HYPHEN_RE = re.compile("-")
+PERIOD_RE = re.compile("(?<=[a-zA-Z])\.(?=[a-zA-Z])")
 
 
 def rm_stop_words(tokens: list) -> list:
@@ -16,8 +16,8 @@ def stem(tokens: list) -> list:
 
 
 def normalize(s: str) -> str:
-    s = hyphen_re.sub(' ', s)  # low-cost -> low cost
-    s = period_re.sub('', s)  # U.S.A -> USA
+    s = HYPHEN_RE.sub(' ', s)  # low-cost -> low cost
+    s = PERIOD_RE.sub('', s)  # U.S.A -> USA
     return s
 
 
