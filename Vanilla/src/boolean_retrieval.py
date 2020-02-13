@@ -108,12 +108,15 @@ def equivalences_2_query(equivalent_words: set, original_wildcard_query: str) ->
     regex = re.sub(r'\*', '[a-zA-Z]*', original_wildcard_query)
     t = set()
     for word in equivalent_words:
-        if re.search(regex, original_wildcard_query) is not None:
+        if re.search(regex, word) is not None:
             t.add(word)
     return '( ' + ' OR '.join(t) + ' )'
 
 
 def query(idx: Index, raw_query: str) -> list:
+    raw_query = re.sub(r'\(', ' ( ', raw_query)
+    raw_query = re.sub(r'\)', ' ) ', raw_query)
+
     tmp = []
     for t in raw_query.split():
         if _is_operand(t):
@@ -158,9 +161,9 @@ def query(idx: Index, raw_query: str) -> list:
 
 
 if __name__ == "__main__":
-    # print(infix_2_postfix("(*ge AND_NOT (man* OR health*))"))
+    print(infix_2_postfix("(*ge AND_NOT (man* OR health*))"))
     # print(and_not_operation([1, 2, 3], [1, 2, 4, 35]))
 
     idxf2 = Index._load('idx_full')
 
-    print(query(idxf2, '*hood'))
+    print(query(idxf2, '(statistical OR su*ort)'))
