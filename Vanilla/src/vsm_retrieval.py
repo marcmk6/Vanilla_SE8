@@ -24,7 +24,7 @@ def vectorize_query(index: Index, raw_query: str) -> np.ndarray:
     return np.asarray(vectorized_query)
 
 
-def query(vectorized_query: np.ndarray, index: Index) -> list:
+def query(index: Index, vectorized_query: np.ndarray) -> list:
     ranking = np.dot(index.tf_idf_matrix, vectorized_query).tolist()
     full_results = []
     for i, score in enumerate(ranking):
@@ -45,5 +45,5 @@ if __name__ == '__main__':
 
     # print(idx.df_dict)
     vec = vectorize_query(index=idx, raw_query='information system management')
-    print(query(vec, idx))
+    print(query(idx, vec))
     pass

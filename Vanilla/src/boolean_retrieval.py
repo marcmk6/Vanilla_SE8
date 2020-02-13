@@ -1,9 +1,15 @@
 import re
 import text_processing
-from index import Index
+from index import Index, bigrams_2_terms
+import wildcard_handler
+
 
 def _is_operand(exp: str) -> bool:
-    return re.search('\(|\)|AND|OR|AND_NOT', exp) is None
+    return re.search(r'\(|\)|AND|OR|AND_NOT', exp) is None
+
+
+def _is_wildcard_query_operand(operand: str) -> bool:
+    return re.search(r'\*', operand) is not None
 
 
 # ref: https://runestone.academy/runestone/books/published/pythonds/BasicDS/InfixPrefixandPostfixExpressions.html
@@ -98,12 +104,25 @@ def perform_bool_operation(operator: str, operand_1: list, operand_2: list) -> l
     return r
 
 
-def query(idx: Index, raw_query: str) -> list:
+def equivalences_2_query(equivalent_words: set, original_wildcard_query: str) -> str:
+    regex = re.sub(r'\*', '[a-zA-Z]*', original_wildcard_query)
+    t = set()
+    for word in equivalent_words:
+        if re.search(regex, original_wildcard_query) is not None:
+            t.add(word)
+    return '( ' + ' OR '.join(t) + ' )'
 
+
+def query(idx: Index, raw_query: str) -> list:
     tmp = []
     for t in raw_query.split():
         if _is_operand(t):
-            t = text_processing.process(t)[0]
+            if _is_wildcard_query_operand(t):
+                bigrams = wildcard_handler.get_bigrams(t)
+                unchecked_equivalences = bigrams_2_terms(idx, bigrams)
+                t = equivalences_2_query(unchecked_equivalences, t)
+            else:
+                t = text_processing.process(t)[0]
         tmp.append(t)
 
     processed_query = ' '.join(tmp)
@@ -114,7 +133,7 @@ def query(idx: Index, raw_query: str) -> list:
         return idx.get(postfix_expr_tokens.pop())
 
     operand_stack = []
-    r = []
+    result = []
     for expr_token in postfix_expr_tokens:
 
         if _is_operand(expr_token):  # token is keyword
@@ -132,10 +151,10 @@ def query(idx: Index, raw_query: str) -> list:
             else:
                 operand_1 = operand_stack.pop()
 
-            r = perform_bool_operation(expr_token, operand_1, operand_2)
-            operand_stack.append(r)
+            result = perform_bool_operation(expr_token, operand_1, operand_2)
+            operand_stack.append(result)
 
-    return r
+    return result
 
 
 if __name__ == "__main__":
@@ -144,4 +163,4 @@ if __name__ == "__main__":
 
     idxf2 = Index._load('idx_full')
 
-    print(query(idxf2, 'query AND processing'))
+    print(query(idxf2, '*hood'))

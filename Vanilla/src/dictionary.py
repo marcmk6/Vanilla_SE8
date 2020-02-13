@@ -3,7 +3,7 @@ import text_processing
 
 
 # Module 3 - Dictionary building
-def build_vocabulary(corpus, stop_words_removal=True, stemming=True, normalization=True):
+def build_vocabulary(corpus, stop_words_removal=True, stemming=True, normalization=True) -> list:
     terms = set()
     with open(corpus, 'r') as corpus_file:
         reader = csv.reader(corpus_file)
@@ -20,7 +20,7 @@ def build_vocabulary(corpus, stop_words_removal=True, stemming=True, normalizati
                                                            normalization=normalization)
                 for term in processed_tokens:
                     terms.add(term)
-    terms = sorted(terms)
+    terms = sorted(list(terms))
     return terms
 
 

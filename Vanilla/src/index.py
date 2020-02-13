@@ -3,20 +3,24 @@ import dictionary
 import json
 import pickle
 import numpy as np
+import re
 import text_processing
+from wildcard_handler import get_bigrams, bigram_2_regex
 
 SAVING_KEY_DF_DICT = 'DF_DICT'
 SAVING_KEY_DOCID_TF_DICT = 'DOCID_TF_DICT'
 SAVING_KEY_DOC_ID = 'DOC_ID'
 
 
-class Index:
-    class _Document:
+class _Document:
 
-        def __init__(self, doc_id, title, content):
-            self.doc_id = doc_id
-            self.title = title
-            self.content = content
+    def __init__(self, doc_id, title, content):
+        self.doc_id = doc_id
+        self.title = title
+        self.content = content
+
+
+class Index:
 
     # TODO: Remove code for debugging
     def __init__(self, corpus=None, df_dict=None, docid_tf_dict=None, doc_ids=None):
@@ -38,12 +42,18 @@ class Index:
             self.df_dict = df
             self.docid_tf_dict = tf
             self.doc_ids = {SAVING_KEY_DOC_ID: id_lst}
+
+            self.terms = terms
+
         elif (df_dict is not None) and (docid_tf_dict is not None) and (doc_ids is not None):
             self.df_dict = df_dict
             self.docid_tf_dict = docid_tf_dict
             self.doc_ids = doc_ids
+            self.terms = self.df_dict.keys()
         else:
             pass
+
+        self.secondary_index = self._build_secondary_index()
 
         self.doc_count = len(self.doc_ids[SAVING_KEY_DOC_ID])
 
@@ -65,7 +75,7 @@ class Index:
                 doc_id = row[0]
                 title = row[1]
                 content = row[2]
-                docs.append(Index._Document(doc_id, title, content))
+                docs.append(_Document(doc_id, title, content))
         return docs
 
     @staticmethod
@@ -182,6 +192,32 @@ class Index:
             index = pickle.load(f)
         return index
 
+    def _build_secondary_index(self):
+
+        secondary_index = {}
+
+        all_bigrams = set()
+        for term in self.terms:
+            if re.search('^[a-zA-Z]{2,}$', term) is not None:
+                all_bigrams = all_bigrams.union(get_bigrams(term))
+
+        for bigram in list(all_bigrams):
+            matched_terms = []
+            for term in self.terms:
+                if re.search(bigram_2_regex(bigram), term) is not None:
+                    matched_terms.append(term)
+            secondary_index[bigram] = sorted(matched_terms)  # FIXME: sort or not?
+
+        return secondary_index
+
+
+def bigrams_2_terms(index: Index, bigrams: set) -> set:
+    terms = []
+    for bigram in bigrams:
+        terms.append(set(index.secondary_index[bigram]))
+    r = set.intersection(*terms)
+    return r
+
 
 if __name__ == '__main__':
     corpus_path = '../course_corpus_full.csv'
@@ -189,8 +225,8 @@ if __name__ == '__main__':
     # print(tf)
     # print({k: v for k, v in sorted(df.items(), key=lambda item: item[1], reverse=True)})
 
-    idxf2 = Index(corpus=corpus_path)
-    idxf2._save('idx_full')
+    # idxf2 = Index(corpus=corpus_path)
+    # idxf2._save('idx_full')
 
-    # idx = Index.load('idxtest')
-    # print(idx.get('csi'))
+    idx = Index._load('idx_full')
+    print(idx.get('csi'))
