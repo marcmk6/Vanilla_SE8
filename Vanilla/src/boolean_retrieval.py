@@ -125,7 +125,7 @@ def query(idx: Index, raw_query: str) -> list:
                 unchecked_equivalences = bigrams_2_terms(idx, bigrams)
                 t = equivalences_2_query(unchecked_equivalences, t)
             else:
-                t = text_processing.process(t)[0]
+                t = text_processing.process(string=t, config=idx.config)[0]
         tmp.append(t)
 
     processed_query = ' '.join(tmp)
@@ -161,9 +161,9 @@ def query(idx: Index, raw_query: str) -> list:
 
 
 if __name__ == "__main__":
-    print(infix_2_postfix("(*ge AND_NOT (man* OR health*))"))
+    # print(infix_2_postfix("(*ge AND_NOT (man* OR health*))"))
     # print(and_not_operation([1, 2, 3], [1, 2, 4, 35]))
 
     idxf2 = Index._load('idx_full')
 
-    print(query(idxf2, '(statistical OR su*ort)'))
+    print(query(idxf2, 'psyc*'))

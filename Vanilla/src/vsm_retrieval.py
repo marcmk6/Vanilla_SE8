@@ -5,7 +5,7 @@ from index import Index
 DOC_RETRIEVAL_LIMIT = 50
 
 
-def vectorize_query(index: Index, raw_query: str) -> np.ndarray:
+def _vectorize_query(index: Index, raw_query: str) -> np.ndarray:
     """
     :param index:
     :param raw_query:
@@ -13,7 +13,7 @@ def vectorize_query(index: Index, raw_query: str) -> np.ndarray:
     """
     tokens = []
     for t in raw_query.split():
-        tokens.append(text_processing.process(t)[0])
+        tokens.append(text_processing.process(string=t, config=index.config)[0])
 
     terms = list(index.df_dict.keys())
     vectorized_query = [0] * len(terms)
@@ -24,7 +24,8 @@ def vectorize_query(index: Index, raw_query: str) -> np.ndarray:
     return np.asarray(vectorized_query)
 
 
-def query(index: Index, vectorized_query: np.ndarray) -> list:
+def query(index: Index, query: str) -> list:
+    vectorized_query = _vectorize_query(index, query)
     ranking = np.dot(index.tf_idf_matrix, vectorized_query).tolist()
     full_results = []
     for i, score in enumerate(ranking):
@@ -44,6 +45,5 @@ if __name__ == '__main__':
     idx = Index._load('idx_full')
 
     # print(idx.df_dict)
-    vec = vectorize_query(index=idx, raw_query='information system management')
-    print(query(idx, vec))
+    print(query(idx, 'information system management'))
     pass

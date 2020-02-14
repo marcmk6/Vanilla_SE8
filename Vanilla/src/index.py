@@ -4,12 +4,9 @@ import json
 import pickle
 import numpy as np
 import re
+import index_configuration
 import text_processing
 from wildcard_handler import get_bigrams, bigram_2_regex
-
-SAVING_KEY_DF_DICT = 'DF_DICT'
-SAVING_KEY_DOCID_TF_DICT = 'DOCID_TF_DICT'
-SAVING_KEY_DOC_ID = 'DOC_ID'
 
 
 class _Document:
@@ -22,44 +19,33 @@ class _Document:
 
 class Index:
 
-    # TODO: Remove code for debugging
-    def __init__(self, corpus=None, df_dict=None, docid_tf_dict=None, doc_ids=None):
+    def __init__(self, config=None, corpus=None):
         """
         The index can be either construct from a corpus or from dicts
-        :param corpus: path to corpus file
-        :param df_dict:
-        :param docid_tf_dict:
-        :param doc_ids:
+        :param config:
+        :param corpus:
         """
-        if corpus:
-            terms = dictionary.build_vocabulary(corpus)
-            docs = self._create_documents(corpus)
-            id_lst = []
-            for doc in docs:
-                id_lst.append(doc.doc_id)
-            tf, df = self._construct_index(terms, docs)
 
-            self.df_dict = df
-            self.docid_tf_dict = tf
-            self.doc_ids = {SAVING_KEY_DOC_ID: id_lst}
+        self.config = config
+        self.terms = dictionary.build_vocabulary(corpus, self.config)
 
-            self.terms = terms
+        docs = self._create_documents(corpus)
+        id_lst = []
+        for doc in docs:
+            id_lst.append(doc.doc_id)
+        tf, df = self._construct_index(self.terms, docs)
 
-        elif (df_dict is not None) and (docid_tf_dict is not None) and (doc_ids is not None):
-            self.df_dict = df_dict
-            self.docid_tf_dict = docid_tf_dict
-            self.doc_ids = doc_ids
-            self.terms = self.df_dict.keys()
-        else:
-            pass
+        self.df_dict = df
+        self.docid_tf_dict = tf
+        self.doc_ids = id_lst
 
-        self.secondary_index = self._build_secondary_index()
-
-        self.doc_count = len(self.doc_ids[SAVING_KEY_DOC_ID])
+        self.doc_count = len(self.doc_ids)
 
         tf_matrix = self._get_tf_matrix()
         df_matrix = self._get_df_matrix()
         self.tf_idf_matrix = self._get_tf_idf_matrix(tf_matrix, df_matrix, n=self.doc_count)
+
+        self.secondary_index = self._build_secondary_index()
 
     @staticmethod
     def _create_documents(corpus):
@@ -78,8 +64,7 @@ class Index:
                 docs.append(_Document(doc_id, title, content))
         return docs
 
-    @staticmethod
-    def _construct_index(terms, documents) -> (dict, dict):
+    def _construct_index(self, terms, documents) -> (dict, dict):
         df_dict = {}  # k: term, v: df
         docid_tf_dict = {}  # k: term, v: postings (dict:{doc_id, tf})
 
@@ -90,8 +75,7 @@ class Index:
         for doc in documents:
             doc_id = doc.doc_id
             search_field = ' '.join(
-                text_processing.process(doc.title + doc.content, stop_words_removal=True, stemming=True,
-                                        normalization=True))
+                text_processing.process(string=doc.title + doc.content, config=self.config))
             for term in terms:
                 count = search_field.count(term)
                 if count > 0:
@@ -136,7 +120,7 @@ class Index:
         """
 
         def _get_doc_idx(doc_id: str) -> int:
-            return self.doc_ids[SAVING_KEY_DOC_ID].index(doc_id)
+            return self.doc_ids.index(doc_id)
 
         lst = []
         terms = self.df_dict.keys()
@@ -153,18 +137,18 @@ class Index:
         return tf_matrix
 
     # TODO: Remove. Used for debugging.
-    def _save(self, out):
-        with open(out, 'w') as f:
-            f.write(json.dumps({SAVING_KEY_DF_DICT: self.df_dict, SAVING_KEY_DOCID_TF_DICT: self.docid_tf_dict,
-                                SAVING_KEY_DOC_ID: self.doc_ids}))
+    # def _save(self, out):
+    #     with open(out, 'w') as f:
+    #         f.write(json.dumps({SAVING_KEY_DF_DICT: self.df_dict, SAVING_KEY_DOCID_TF_DICT: self.docid_tf_dict,
+    #                             SAVING_KEY_DOC_ID: self.doc_ids}))
 
     # TODO: Remove. Used for debugging.
-    @staticmethod
-    def _load(index_file):
-        with open(index_file, 'r') as f:
-            idx = json.load(f)
-        return Index(df_dict=idx[SAVING_KEY_DF_DICT], docid_tf_dict=idx[SAVING_KEY_DOCID_TF_DICT],
-                     doc_ids=idx[SAVING_KEY_DOC_ID])
+    # @staticmethod
+    # def _load(index_file):
+    #     with open(index_file, 'r') as f:
+    #         idx = json.load(f)
+    #     return Index(None, df_dict=idx[SAVING_KEY_DF_DICT], docid_tf_dict=idx[SAVING_KEY_DOCID_TF_DICT],
+    #                  doc_ids=idx[SAVING_KEY_DOC_ID])
 
     def get(self, keyword: str) -> list:
         if keyword in self.docid_tf_dict.keys():
@@ -191,6 +175,10 @@ class Index:
         with open(index_file, 'rb') as f:
             index = pickle.load(f)
         return index
+
+    def __str__(self):
+
+        return ''
 
     def _build_secondary_index(self):
 
@@ -225,7 +213,8 @@ if __name__ == '__main__':
     # print(tf)
     # print({k: v for k, v in sorted(df.items(), key=lambda item: item[1], reverse=True)})
 
-    # idxf2 = Index(corpus=corpus_path)
+    # idxf2 = Index(config=configuration.Configuration(stop_words_removal=True, stemming=True, normalization=True),
+    #               corpus=corpus_path)
     # idxf2._save('idx_full')
 
     idx = Index._load('idx_full')

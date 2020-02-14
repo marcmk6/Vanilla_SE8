@@ -1,9 +1,14 @@
 import csv
 import text_processing
+from index_configuration import IndexConfiguration
 
 
 # Module 3 - Dictionary building
-def build_vocabulary(corpus, stop_words_removal=True, stemming=True, normalization=True) -> list:
+def build_vocabulary(corpus, config: IndexConfiguration) -> list:
+    stop_words_removal = config.stop_words_removal
+    stemming = config.stemming
+    normalization = config.normalization
+
     terms = set()
     with open(corpus, 'r') as corpus_file:
         reader = csv.reader(corpus_file)
@@ -16,8 +21,7 @@ def build_vocabulary(corpus, stop_words_removal=True, stemming=True, normalizati
             to_be_processed = [title + content]
 
             for e in to_be_processed:
-                processed_tokens = text_processing.process(e, stop_words_removal=stop_words_removal, stemming=stemming,
-                                                           normalization=normalization)
+                processed_tokens = text_processing.process(string=e, config=config)
                 for term in processed_tokens:
                     terms.add(term)
     terms = sorted(list(terms))
@@ -26,4 +30,4 @@ def build_vocabulary(corpus, stop_words_removal=True, stemming=True, normalizati
 
 if __name__ == "__main__":
     corpus = '../course_corpus.csv'
-    print(build_vocabulary(corpus))
+    print(build_vocabulary(corpus, config=IndexConfiguration(True, True, True)))

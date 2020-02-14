@@ -25,8 +25,4 @@ def bigram_2_regex(bigram: str) -> str:
     elif bigram[-1] == '$':
         return other_chars + bigram
     else:
-        # return other_chars + bigram + other_chars  # FIXME: correct regex?
         return bigram
-
-
-
