@@ -16,20 +16,22 @@ def run_test():
                                 'child psychology',
                                 'bayesian network classification']
 
-
-    se = SearchEngine(model='boolean')
+    se = SearchEngine(corpus='../course_corpus_full.csv', model='boolean')
     se.load_index()
     for q in boolean_retrieval_test_query:
         r, correction = se.query(q)
-        print('Query: %s'%(q))
+        print('Query: %s' % (q))
         print(r[:5])
         print(correction)
     se.switch_model()
     for q in vsm_retrieval_test_query:
         r, correction = se.query(q)
-        print('Query: %s'%(q))
+        print('Query: %s' % (q))
         print(r[:5])
         print(correction)
+
+    print()
+    print(se.get_doc_excerpt('CSI_4107'))
 
 
 if __name__ == '__main__':
@@ -50,4 +52,3 @@ if __name__ == '__main__':
     # print(b)
     # pass
     run_test()
-

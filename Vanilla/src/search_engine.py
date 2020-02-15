@@ -5,6 +5,7 @@ from index import Index
 import vsm_retrieval
 import boolean_retrieval
 from spelling_correction import SpellingCorrection
+from corpus import Corpus
 
 INDEX_DIR = '../index/'
 INDEX_FILE_EXTENSION = '.idx'
@@ -25,10 +26,11 @@ class _SEConf:
 
 class SearchEngine:
 
-    def __init__(self, model='vsm', index_conf=None):
+    def __init__(self, corpus: str, model='vsm', index_conf=None):
         self.index_confs = []
         self.indexes = []
         self.current_se_conf = _SEConf(model=model, index_conf=index_conf)
+        self.corpus = Corpus(corpus_file=corpus)
 
     def build_index(self, corpus_path: str) -> None:
         """
@@ -76,13 +78,16 @@ class SearchEngine:
         return self.indexes[7 - tmp]
 
     def switch_stop_words_removal(self) -> None:
-        self.current_se_conf.stop_words_removal = not self.current_se_conf.stop_words_removal
+        current_state = self.current_se_conf.current_index_conf.stop_words_removal
+        self.current_se_conf.current_index_conf.stop_words_removal = not current_state
 
     def switch_stemming(self) -> None:
-        self.current_se_conf.stemming = not self.current_se_conf.stemming
+        current_state = self.current_se_conf.current_index_conf.stemming
+        self.current_se_conf.current_index_conf.stemming = not current_state
 
     def switch_normalization(self) -> None:
-        self.current_se_conf.normalization = not self.current_se_conf.normalization
+        current_state = self.current_se_conf.current_index_conf.normalization
+        self.current_se_conf.current_index_conf.normalization = not current_state
 
     def switch_model(self, model=None) -> None:
         if model is None:
@@ -104,6 +109,15 @@ class SearchEngine:
             return vsm_retrieval.query(self._get_current_index(), query)
         else:
             return boolean_retrieval.query(self._get_current_index(), query)
+
+    def get_doc_content(self, doc_id: str):
+        return self.corpus.get_doc_content(doc_id)
+
+    def get_doc_title(self, doc_id: str):
+        return self.corpus.get_doc_title(doc_id)
+
+    def get_doc_excerpt(self, doc_id: str):
+        return self.corpus.get_doc_excerpt(doc_id)
 
     def __str__(self):
         return _SEConf.__str__(self.current_se_conf)
