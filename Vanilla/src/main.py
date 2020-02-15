@@ -2,9 +2,8 @@ import os
 import sys
 
 from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import QWidget, QApplication, QLineEdit, QPushButton, \
-    QRadioButton, QMessageBox, QHBoxLayout, QVBoxLayout, QLabel, QButtonGroup, \
-    QTextEdit, QListView, QDialog, QCheckBox
+from PyQt5.QtWidgets import QWidget, QApplication, QLineEdit, QPushButton, QRadioButton, QMessageBox, QHBoxLayout, \
+    QVBoxLayout, QLabel, QButtonGroup, QTextEdit, QListView, QDialog, QCheckBox
 from PyQt5.QtGui import QIcon, QStandardItemModel, QStandardItem
 from PyQt5.QtCore import pyqtSlot
 
@@ -178,13 +177,14 @@ class MainWindow(QWidget):
             buttonReplay = self.__create_message_box(
                 "The query string cannot be blank")
         else:
-            self.retrieved_doc_ids, tmp = self.search_engine.query(query_string)
+            self.retrieved_doc_ids, corrections = self.search_engine.query(query_string)
             if len(self.retrieved_doc_ids) == 0:
-                msg = self.__create_message_box("Could not find anything.")
+                self.__create_message_box("Could not find anything.")
             else:
                 model = QStandardItemModel()
-                for doc in self.retrieved_doc_ids:
-                    item = QStandardItem(doc)
+                for doc_id in self.retrieved_doc_ids:
+                    doc_title = self.search_engine.get_doc_title(doc_id)
+                    item = QStandardItem(doc_title)
                     model.appendRow(item)
                 self.queryResult.setModel(model)
                 self.queryResult.show()
@@ -192,11 +192,9 @@ class MainWindow(QWidget):
     def changeChoiceState(self, button: QPushButton):
         if button.isChecked():
             if button.text() == BOOLEAN_MODEL_BUTTON_TEXT:
-                # TODO: debugging
                 self.search_engine.switch_model('boolean')
                 print('Switched to boolean model')
             elif button.text() == VSM_MODEL_BUTTON_TEXT:
-                # TODO: debugging
                 self.search_engine.switch_model('vsm')
                 print('Switched to vsm model')
             elif button.text() == 'UofO catalog':
@@ -210,26 +208,25 @@ class MainWindow(QWidget):
 
     def selectItem(self):
         selected_item_idx = self.queryResult.selectedIndexes()[0].row()
-        print("id selected: %d" % selected_item_idx)
-        print("course: %s" % self.retrieved_doc_ids[selected_item_idx])
-        print("course content: %s" %
-              self.search_engine.get_doc_content(self.retrieved_doc_ids[selected_item_idx]))
+        # print("id selected: %d" % selected_item_idx)
+        # print("doc title: %s" % self.retrieved_doc_ids[selected_item_idx])
+        # print("doc content: %s" %
+        #       self.search_engine.get_doc_content(self.retrieved_doc_ids[selected_item_idx]))
         selected_doc_id = self.retrieved_doc_ids[selected_item_idx]
         doc_content = self.search_engine.get_doc_content(selected_doc_id)
         doc_title = self.search_engine.get_doc_title(selected_doc_id)
-        self.__display_course_details(self.retrieved_doc_ids[selected_item_idx],
-                                      {'title': doc_title, 'content': doc_content})
+        self.__display_course_details({'title': doc_title, 'content': doc_content})
 
-    def __display_course_details(self, course_id, course_details):
+    def __display_course_details(self, document):
         dialog = QDialog(parent=self)
-        dialog.setWindowTitle("%s" % course_id)
-        dialog.resize(320, 240)
+        dialog.setWindowTitle("%s" % document.get('title'))
+        dialog.resize(640, 480)
         vbox = QVBoxLayout()
 
         hbox1 = QHBoxLayout()
         titelLabel = QLabel("Title: \t")
         title = QLineEdit()
-        title.setText(course_details.get('title'))
+        title.setText(document.get('title'))
         title.setReadOnly(True)
         hbox1.addWidget(titelLabel)
         hbox1.addWidget(title)
@@ -238,7 +235,7 @@ class MainWindow(QWidget):
         contentLabel = QLabel("Content: ")
         content = QTextEdit()
         content.setReadOnly(True)
-        content.setText(course_details.get('content'))
+        content.setText(document.get('content'))
         hbox2.addWidget(contentLabel)
         hbox2.addWidget(content)
 
