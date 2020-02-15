@@ -1,12 +1,12 @@
 import csv
 import dictionary
-import json
 import pickle
 import numpy as np
 import re
-import index_configuration
 import text_processing
 from wildcard_handler import get_bigrams, bigram_2_regex
+
+UNFOUND_TERM_LIMIT = 3
 
 
 class _Document:
@@ -136,23 +136,9 @@ class Index:
         tf_matrix = np.transpose(tf_matrix)
         return tf_matrix
 
-    # TODO: Remove. Used for debugging.
-    # def _save(self, out):
-    #     with open(out, 'w') as f:
-    #         f.write(json.dumps({SAVING_KEY_DF_DICT: self.df_dict, SAVING_KEY_DOCID_TF_DICT: self.docid_tf_dict,
-    #                             SAVING_KEY_DOC_ID: self.doc_ids}))
-
-    # TODO: Remove. Used for debugging.
-    # @staticmethod
-    # def _load(index_file):
-    #     with open(index_file, 'r') as f:
-    #         idx = json.load(f)
-    #     return Index(None, df_dict=idx[SAVING_KEY_DF_DICT], docid_tf_dict=idx[SAVING_KEY_DOCID_TF_DICT],
-    #                  doc_ids=idx[SAVING_KEY_DOC_ID])
-
-    def get(self, keyword: str) -> list:
-        if keyword in self.docid_tf_dict.keys():
-            return list(self.docid_tf_dict[keyword].keys())
+    def get(self, term: str) -> list:
+        if term in self.docid_tf_dict.keys():
+            return list(self.docid_tf_dict[term].keys())
         else:
             return []
 
@@ -198,6 +184,10 @@ class Index:
 
         return secondary_index
 
+    def get_term_frequency(self, term: str) -> int:
+        dct = self.docid_tf_dict[term]
+        return sum(list(dct.values()))
+
 
 def bigrams_2_terms(index: Index, bigrams: set) -> set:
     terms = []
@@ -206,16 +196,16 @@ def bigrams_2_terms(index: Index, bigrams: set) -> set:
     r = set.intersection(*terms)
     return r
 
-
-if __name__ == '__main__':
-    corpus_path = '../course_corpus_full.csv'
-
-    # print(tf)
-    # print({k: v for k, v in sorted(df.items(), key=lambda item: item[1], reverse=True)})
-
-    # idxf2 = Index(config=configuration.Configuration(stop_words_removal=True, stemming=True, normalization=True),
-    #               corpus=corpus_path)
-    # idxf2._save('idx_full')
-
-    idx = Index._load('idx_full')
-    print(idx.get('csi'))
+# TODO: remove
+# if __name__ == '__main__':
+#     corpus_path = '../course_corpus_full.csv'
+#
+#     # print(tf)
+#     # print({k: v for k, v in sorted(df.items(), key=lambda item: item[1], reverse=True)})
+#
+#     # idxf2 = Index(config=configuration.Configuration(stop_words_removal=True, stemming=True, normalization=True),
+#     #               corpus=corpus_path)
+#     # idxf2._save('idx_full')
+#
+#     idx = Index._load('idx_full')
+#     print(idx.get('csi'))

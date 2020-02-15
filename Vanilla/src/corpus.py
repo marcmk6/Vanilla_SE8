@@ -69,15 +69,15 @@ def preprocess_course_corpus(src_file):
         for docid, name, course_description in zip(doc_id, course_name, course_description):
             writer.writerow([docid, name, course_description])
 
-
-if __name__ == "__main__":
-
-    """
-    files = _separate_files(SRC)
-    for file in files:
-        preprocess_course_corpus(file)
-    """
-    # preprocess(files[3])
-
-    cp = Corpus(OUT)
-    print(cp.get_doc_excerpt('CSI_4107'))
+# TODO: remove
+# if __name__ == "__main__":
+#
+#     """
+#     files = _separate_files(SRC)
+#     for file in files:
+#         preprocess_course_corpus(file)
+#     """
+#     # preprocess(files[3])
+#
+#     cp = Corpus(OUT)
+#     print(cp.get_doc_excerpt('CSI_4107'))

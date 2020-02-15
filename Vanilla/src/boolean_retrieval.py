@@ -1,7 +1,8 @@
 import re
 import text_processing
-from index import Index, bigrams_2_terms
+from index import Index, bigrams_2_terms, UNFOUND_TERM_LIMIT
 import wildcard_handler
+from spelling_correction import SpellingCorrection, get_closest_term
 
 
 def _is_operand(exp: str) -> bool:
@@ -113,7 +114,7 @@ def equivalences_2_query(equivalent_words: set, original_wildcard_query: str) ->
     return '( ' + ' OR '.join(t) + ' )'
 
 
-def query(idx: Index, raw_query: str) -> list:
+def query(index: Index, raw_query: str) -> (list, SpellingCorrection):
     raw_query = re.sub(r'\(', ' ( ', raw_query)
     raw_query = re.sub(r'\)', ' ) ', raw_query)
 
@@ -122,18 +123,33 @@ def query(idx: Index, raw_query: str) -> list:
         if _is_operand(t):
             if _is_wildcard_query_operand(t):
                 bigrams = wildcard_handler.get_bigrams(t)
-                unchecked_equivalences = bigrams_2_terms(idx, bigrams)
+                unchecked_equivalences = bigrams_2_terms(index, bigrams)
                 t = equivalences_2_query(unchecked_equivalences, t)
             else:
-                t = text_processing.process(string=t, config=idx.config)[0]
+                t = text_processing.process(string=t, config=index.config)[0]
         tmp.append(t)
 
     processed_query = ' '.join(tmp)
     postfix_expr_tokens = infix_2_postfix(processed_query).split()
 
+    # Spelling correction
+    spelling_correction_obj = SpellingCorrection(mapping={})
+    correction_candidates = []
+    for idx, tkn in enumerate(postfix_expr_tokens):
+        if _is_operand(tkn) and tkn not in index.terms:
+            correction_candidates.append([idx, tkn, get_closest_term(word=tkn, terms=index.terms)])
+    correction_made = sorted(correction_candidates, key=lambda x: index.get_term_frequency(x[2]), reverse=True)[
+                      :UNFOUND_TERM_LIMIT]
+    for e in correction_made:
+        idx = e[0]
+        old_term = e[1]
+        correction = e[2]
+        postfix_expr_tokens[idx] = correction
+        spelling_correction_obj.mapping[old_term] = correction
+
     # Single word query
     if len(postfix_expr_tokens) == 1:
-        return idx.get(postfix_expr_tokens.pop())
+        return index.get(postfix_expr_tokens.pop())
 
     operand_stack = []
     result = []
@@ -145,25 +161,25 @@ def query(idx: Index, raw_query: str) -> list:
         else:  # token is bool operator
 
             if type(operand_stack[-1]) is str:
-                operand_2 = idx.get(operand_stack.pop())
+                operand_2 = index.get(operand_stack.pop())
             else:
                 operand_2 = operand_stack.pop()
 
             if type(operand_stack[-1]) is str:
-                operand_1 = idx.get(operand_stack.pop())
+                operand_1 = index.get(operand_stack.pop())
             else:
                 operand_1 = operand_stack.pop()
 
             result = perform_bool_operation(expr_token, operand_1, operand_2)
             operand_stack.append(result)
 
-    return result
+    return result, spelling_correction_obj
 
-
-if __name__ == "__main__":
-    # print(infix_2_postfix("(*ge AND_NOT (man* OR health*))"))
-    # print(and_not_operation([1, 2, 3], [1, 2, 4, 35]))
-
-    idxf2 = Index._load('idx_full')
-
-    print(query(idxf2, 'psyc*'))
+# TODO: remove
+# if __name__ == "__main__":
+#     # print(infix_2_postfix("(*ge AND_NOT (man* OR health*))"))
+#     # print(and_not_operation([1, 2, 3], [1, 2, 4, 35]))
+#
+#     idxf2 = Index._load('idx_full')
+#
+#     print(query(idxf2, 'psyc*'))

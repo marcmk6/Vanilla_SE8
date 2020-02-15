@@ -4,8 +4,10 @@ from index_configuration import IndexConfiguration
 from index import Index
 import vsm_retrieval
 import boolean_retrieval
+from spelling_correction import SpellingCorrection
 
 INDEX_DIR = '../index/'
+INDEX_FILE_EXTENSION = '.idx'
 
 
 class _SEConf:
@@ -17,6 +19,9 @@ class _SEConf:
             self.current_index_conf = IndexConfiguration(stop_words_removal=True, stemming=True, normalization=True)
         self.current_model = model
 
+    def __str__(self):
+        return 'Current model: %s, current index selected: %s' % (self.current_model, self.current_index_conf)
+
 
 class SearchEngine:
 
@@ -25,7 +30,10 @@ class SearchEngine:
         self.indexes = []
         self.current_se_conf = _SEConf(model=model, index_conf=index_conf)
 
-    def build_index(self, corpus_path: str):
+    def build_index(self, corpus_path: str) -> None:
+        """
+        Build and save index from corpus
+        """
 
         if not exists(INDEX_DIR):
             makedirs(INDEX_DIR)
@@ -41,17 +49,21 @@ class SearchEngine:
                         IndexConfiguration(stop_words_removal=bool(swr), stemming=bool(s), normalization=bool(n)))
 
         self.indexes = []
+        # TODO: multiprocessing?
         for _conf_tuple, conf_obj in zip(_conf_tuples, self.index_confs):
             index = Index(corpus=corpus_path, config=conf_obj)
-            index.save(INDEX_DIR + 'index_' + ''.join([str(e) for e in list(_conf_tuple)]) + '.idx')
+            index.save(INDEX_DIR + 'index_' + ''.join([str(e) for e in list(_conf_tuple)]) + INDEX_FILE_EXTENSION)
             self.indexes.append(index)
 
-    def load_index(self):
+    def load_index(self) -> None:
+        """
+        Load existing indexes
+        """
         self.indexes = []
-        index_files = [f for f in listdir(INDEX_DIR) if isfile(join(INDEX_DIR, f))]
+        index_files = [f for f in listdir(INDEX_DIR) if isfile(join(INDEX_DIR, f)) and f.endswith(INDEX_FILE_EXTENSION)]
         index_files = sorted(index_files, reverse=True)
         for index_file in index_files:
-            self.indexes.append(Index.load(index_file))
+            self.indexes.append(Index.load(INDEX_DIR + index_file))
         self.index_confs = [idx.config for idx in self.indexes]
 
     def _get_current_index(self):
@@ -60,7 +72,8 @@ class SearchEngine:
         i2 = int(idx_conf.stemming)
         i3 = int(idx_conf.normalization)
         i = str(i1) + str(i2) + str(i3)
-        return self.indexes[int(i, base=2)]
+        tmp = int(i, base=2)
+        return self.indexes[7 - tmp]
 
     def switch_stop_words_removal(self) -> None:
         self.current_se_conf.stop_words_removal = not self.current_se_conf.stop_words_removal
@@ -71,27 +84,44 @@ class SearchEngine:
     def switch_normalization(self) -> None:
         self.current_se_conf.normalization = not self.current_se_conf.normalization
 
-    def switch_model(self) -> None:
-        current = self.current_se_conf.current_model
-        if current == 'vsm':
-            self.current_se_conf.current_model = 'boolean'
+    def switch_model(self, model=None) -> None:
+        if model is None:
+            current = self.current_se_conf.current_model
+            if current == 'vsm':
+                self.current_se_conf.current_model = 'boolean'
+            else:
+                self.current_se_conf.current_model = 'vsm'
         else:
-            self.current_se_conf.current_model = 'vsm'
+            assert (model in ['vsm', 'boolean'])
+            self.current_se_conf.current_model = model
 
-    def query(self, query: str) -> list:
+    def query(self, query: str) -> (list, SpellingCorrection):
+        """
+        :param query:
+        :return: (list of document id, spelling correction object indicating which words are corrected if applicable)
+        """
         if self.current_se_conf.current_model == 'vsm':
-            return vsm_retrieval.query(self.indexes[self._get_current_index()], query)
+            return vsm_retrieval.query(self._get_current_index(), query)
         else:
-            return boolean_retrieval.query(self.indexes[self._get_current_index()], query)
+            return boolean_retrieval.query(self._get_current_index(), query)
+
+    def __str__(self):
+        return _SEConf.__str__(self.current_se_conf)
 
 
 if __name__ == '__main__':
-    # conf = Configuration(stop_words_removal=True, stemming=True, normalization=True)
     corpus_path = '../course_corpus_full.csv'
-    # idx = Index(corpus=corpus_path, config=conf)
-    # idx.save('idx_full_b')
-    # idx = Index.load('idx_full_b')
-    # print(idx.doc_count)
 
     se = SearchEngine(model='vsm')
-    se.build_index(corpus_path)
+    # se.build_index(corpus_path)
+    se.load_index()
+    a, b = se.query('computr algorithm desgin')
+    print(a)
+    print(b)
+
+    se.switch_model('boolean')
+    print(se)
+
+    a, b = se.query('algorihtm AND analyss AND design')
+    print(a)
+    print(b)

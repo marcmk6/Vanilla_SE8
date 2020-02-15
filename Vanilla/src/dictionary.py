@@ -5,10 +5,6 @@ from index_configuration import IndexConfiguration
 
 # Module 3 - Dictionary building
 def build_vocabulary(corpus, config: IndexConfiguration) -> list:
-    stop_words_removal = config.stop_words_removal
-    stemming = config.stemming
-    normalization = config.normalization
-
     terms = set()
     with open(corpus, 'r') as corpus_file:
         reader = csv.reader(corpus_file)
