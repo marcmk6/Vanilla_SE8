@@ -1,17 +1,16 @@
 from os import listdir, makedirs
 from os.path import isfile, join, exists
 from index_configuration import IndexConfiguration
-from index import Index
+from index import Index, _SearchResult
 import vsm_retrieval
 import boolean_retrieval
-from spelling_correction import SpellingCorrection
 from corpus import Corpus
 
 INDEX_DIR = '../index/'
 INDEX_FILE_EXTENSION = '.idx'
 
 
-class _SEConf:
+class _SearchEngineConf:
 
     def __init__(self, model: str, index_conf=None):
         if index_conf is not None:
@@ -29,7 +28,7 @@ class SearchEngine:
     def __init__(self, corpus: str, model='vsm', index_conf=None):
         self.index_confs = []
         self.indexes = []
-        self.current_se_conf = _SEConf(model=model, index_conf=index_conf)
+        self.current_se_conf = _SearchEngineConf(model=model, index_conf=index_conf)
         self.corpus = Corpus(corpus_file=corpus)
 
     def build_index(self, corpus_path: str) -> None:
@@ -100,7 +99,7 @@ class SearchEngine:
             assert (model in ['vsm', 'boolean'])
             self.current_se_conf.current_model = model
 
-    def query(self, query: str) -> (list, SpellingCorrection):
+    def query(self, query: str) -> _SearchResult:
         """
         :param query:
         :return: (list of document id, spelling correction object indicating which words are corrected if applicable)
@@ -120,4 +119,4 @@ class SearchEngine:
         return self.corpus.get_doc_excerpt(doc_id)
 
     def __str__(self):
-        return _SEConf.__str__(self.current_se_conf)
+        return _SearchEngineConf.__str__(self.current_se_conf)

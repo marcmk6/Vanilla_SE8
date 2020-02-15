@@ -1,6 +1,6 @@
 import re
 import text_processing
-from index import Index, bigrams_2_terms, UNFOUND_TERM_LIMIT
+from index import Index, bigrams_2_terms, UNFOUND_TERM_LIMIT, _SearchResult
 import wildcard_handler
 from spelling_correction import SpellingCorrection, get_closest_term
 
@@ -116,7 +116,7 @@ def equivalences_2_query(equivalent_words: set, original_wildcard_query: str) ->
     return '( ' + ' OR '.join(t) + ' )'
 
 
-def query(index: Index, raw_query: str) -> (list, SpellingCorrection):
+def query(index: Index, raw_query: str) -> _SearchResult:
     raw_query = re.sub(r'\(', ' ( ', raw_query)
     raw_query = re.sub(r'\)', ' ) ', raw_query)
 
@@ -152,7 +152,10 @@ def query(index: Index, raw_query: str) -> (list, SpellingCorrection):
 
     # Single word query
     if len(postfix_expr_tokens) == 1:
-        return index.get(postfix_expr_tokens.pop()), spelling_correction_obj
+        retrieved_doc_ids = index.get(postfix_expr_tokens.pop())
+        tmp = _SearchResult(doc_id_lst=retrieved_doc_ids, correction=spelling_correction_obj,
+                             result_scores=[1]*len(retrieved_doc_ids))
+        return tmp
 
     operand_stack = []
     result = []
@@ -176,4 +179,5 @@ def query(index: Index, raw_query: str) -> (list, SpellingCorrection):
             result = perform_bool_operation(expr_token, operand_1, operand_2)
             operand_stack.append(result)
 
-    return result, spelling_correction_obj
+    search_result = _SearchResult(doc_id_lst=result, correction=spelling_correction_obj, result_scores=[1] * len(result))
+    return search_result

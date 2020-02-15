@@ -5,6 +5,7 @@ import numpy as np
 import re
 import text_processing
 from wildcard_handler import get_bigrams, bigram_2_regex
+from spelling_correction import SpellingCorrection
 
 UNFOUND_TERM_LIMIT = 3
 
@@ -195,3 +196,11 @@ def bigrams_2_terms(index: Index, bigrams: set) -> set:
         terms.append(set(index.secondary_index[bigram]))
     r = set.intersection(*terms)
     return r
+
+
+class _SearchResult:
+
+    def __init__(self, doc_id_lst: list, correction: SpellingCorrection, result_scores: list):
+        self.doc_id_lst = doc_id_lst
+        self.correction = correction
+        self.result_scores = result_scores

@@ -26,7 +26,7 @@ class MainWindow(QWidget):
         self.initUI()
 
     def setup_se(self):
-        self.search_engine = SearchEngine(corpus='../course_corpus_full.csv', model='boolean')  # FIXME
+        self.search_engine = SearchEngine(corpus='../course_corpus_full.csv', model='vsm')  # FIXME
         self.search_engine.load_index()
 
     def initUI(self):
@@ -38,7 +38,7 @@ class MainWindow(QWidget):
         self.resize(640, 480)
 
         # main window title
-        self.setWindowTitle("Vanilla Search Engine")
+        self.setWindowTitle('Search Engine - Vanilla SE 8')
 
         # main window icon
         self.setWindowIcon(QIcon(os.path.dirname(
@@ -46,7 +46,7 @@ class MainWindow(QWidget):
 
         # add query input field
         searchLayout = QHBoxLayout()
-        searchLabel = QLabel("Query: ")
+        searchLabel = QLabel('Query: ')
         searchLayout.addWidget(searchLabel)
         self.searchField = QLineEdit()
         # self.searchField.move(20, 20)
@@ -55,13 +55,13 @@ class MainWindow(QWidget):
         vbox.addLayout(searchLayout)
 
         # add choice of model, Boolean, or VSM
-        modelLabel = QLabel("Choice of model: \t\t")
+        modelLabel = QLabel('Choice of model: \t\t')
         modelLayout = QHBoxLayout()
         modelGroup = QButtonGroup(self)
         self.button_boolean_model = QRadioButton(BOOLEAN_MODEL_BUTTON_TEXT)
-        self.button_boolean_model.setChecked(True)
+        self.button_boolean_model.setChecked(False)
         self.button_vsm_model = QRadioButton(VSM_MODEL_BUTTON_TEXT)
-        self.button_vsm_model.setChecked(False)
+        self.button_vsm_model.setChecked(True)
         self.button_boolean_model.toggled.connect(lambda: self.changeChoiceState(self.button_boolean_model))
         self.button_vsm_model.toggled.connect(lambda: self.changeChoiceState(self.button_vsm_model))
         modelLayout.addWidget(modelLabel)
@@ -73,10 +73,10 @@ class MainWindow(QWidget):
         vbox.addLayout(modelLayout)
 
         # add choice of collection: UofO catalog, ..
-        collectionLabel = QLabel("Choice of collection: \t")
+        collectionLabel = QLabel('Choice of collection: \t')
         collectionLayout = QHBoxLayout()
         collectionButtonGroup = QButtonGroup(self)
-        self.button_uo_courses = QRadioButton("UofO catalog")
+        self.button_uo_courses = QRadioButton('UofO catalog')
         self.button_uo_courses.setChecked(True)
         self.button_uo_courses.toggled.connect(lambda: self.changeChoiceState(self.button_uo_courses))
         collectionLayout.addWidget(collectionLabel)
@@ -86,40 +86,46 @@ class MainWindow(QWidget):
         vbox.addLayout(collectionLayout)
 
         # Index configuration selection
-        sw_rm_label = QLabel("Stopwords removal: \t")
+        # sw_rm_label = QLabel('Remove stopwords: \t')
+        sw_rm_label = QLabel('')
         sw_rm_layout = QHBoxLayout()
-        self.sw_rm_btn = QCheckBox('stop_words_removal')
+        self.sw_rm_btn = QCheckBox('Remove stopwords')
         self.sw_rm_btn.setChecked(True)
         self.sw_rm_btn.stateChanged.connect(lambda: self.btnstate(self.sw_rm_btn))
+        self.sw_rm_btn.setToolTip('Perform stopwords removal on both query and corpus')
         sw_rm_layout.addWidget(sw_rm_label)
         sw_rm_layout.addWidget(self.sw_rm_btn)
         vbox.addLayout(sw_rm_layout)
 
-        stm_label = QLabel("Stemming: \t")
+        # stm_label = QLabel('Stemming: \t')
+        stm_label = QLabel('')
         stm_layout = QHBoxLayout()
-        self.stm_btn = QCheckBox("stemming")
+        self.stm_btn = QCheckBox('Stemming')
         self.stm_btn.setChecked(True)
         self.stm_btn.stateChanged.connect(lambda: self.btnstate(self.stm_btn))
+        self.stm_btn.setToolTip('Perform stemming on both query and corpus')
         stm_layout.addWidget(stm_label)
         stm_layout.addWidget(self.stm_btn)
         vbox.addLayout(stm_layout)
 
-        nm_label = QLabel("Normalization: \t")
+        # nm_label = QLabel('Normalization: \t')
+        nm_label = QLabel('')
         nm_layout = QHBoxLayout()
-        self.nm_btn = QCheckBox("normalization")
+        self.nm_btn = QCheckBox('Normalization')
         self.nm_btn.setChecked(True)
         self.nm_btn.stateChanged.connect(lambda: self.btnstate(self.nm_btn))
+        self.nm_btn.setToolTip(
+            'Perform normalization on both query and corpus. (e.g. low-cost -> low cost, U.S.A -> USA)')
         nm_layout.addWidget(nm_label)
         nm_layout.addWidget(self.nm_btn)
         vbox.addLayout(nm_layout)
-        #
 
         # TODO: the information needed for the spelling correction
 
         # add a search button
         searchButtonLayout = QHBoxLayout()
         self.searchButton = QPushButton('Search')
-        self.searchButton.setToolTip('This is a search button')
+        # self.searchButton.setToolTip('This is a search button')
         # self.searchButton.move(20, 400)
         self.searchButton.clicked.connect(self.click_search)
         searchButtonLayout.addStretch(1)
@@ -129,7 +135,7 @@ class MainWindow(QWidget):
         # add a qeury result listView
         self.retrieved_doc_ids = []  # record the doc IDs
         queryResultLayout = QHBoxLayout()
-        queryResultLabel = QLabel("Query result: \t")
+        queryResultLabel = QLabel('Query result: \t')
         self.queryResult = QListView()
         self.queryResult.setAcceptDrops(False)
         self.queryResult.setDragDropMode(
@@ -149,12 +155,14 @@ class MainWindow(QWidget):
         self.show()
 
     def btnstate(self, b):
-        if b.text() == 'stop_words_removal':
+        if b.text() == 'Remove stopwords':
             self.search_engine.switch_stop_words_removal()
-        elif b.text() == 'stemming':
+        elif b.text() == 'Stemming':
             self.search_engine.switch_stemming()
-        elif b.text() == 'normalization':
+        elif b.text() == 'Normalization':
             self.search_engine.switch_normalization()
+        else:
+            pass
 
     # move the window to the center of screen
     def center(self):
@@ -167,27 +175,29 @@ class MainWindow(QWidget):
 
     @pyqtSlot()
     def click_search(self):
-        # TODO: debugging
-        print("Search button clicked.")
 
         query_string = self.searchField.text().strip()
 
         # setup QMessageBox
-        if query_string == "":
-            buttonReplay = self.__create_message_box(
-                "The query string cannot be blank")
+        if query_string == '':
+            self.__create_message_box('Please enter your query')
         else:
-            self.retrieved_doc_ids, corrections = self.search_engine.query(query_string)
+            search_result = self.search_engine.query(query_string)
+            self.retrieved_doc_ids, corrections, scores = search_result.doc_id_lst, search_result.correction, search_result.result_scores
+
             if len(self.retrieved_doc_ids) == 0:
-                self.__create_message_box("Could not find anything.")
+                self.__create_message_box('Could not find anything.')
             else:
                 model = QStandardItemModel()
-                for doc_id in self.retrieved_doc_ids:
+                for doc_id, score in zip(self.retrieved_doc_ids, scores):
                     doc_title = self.search_engine.get_doc_title(doc_id)
-                    item = QStandardItem(doc_title)
+                    item = QStandardItem('[Score: %s] ' % round(score, 4) + doc_title)
                     model.appendRow(item)
                 self.queryResult.setModel(model)
                 self.queryResult.show()
+
+            if corrections.correction_made():
+                self.__create_message_box('Did you mean ... ?\n' + str(corrections))
 
     def changeChoiceState(self, button: QPushButton):
         if button.isChecked():
@@ -198,19 +208,19 @@ class MainWindow(QWidget):
                 self.search_engine.switch_model('vsm')
                 print('Switched to vsm model')
             elif button.text() == 'UofO catalog':
-                # # print("Radio button '%s' is clicked." % button.text())
-                # html_file = "UofO_Courses.html"
-                # if os.path.exists(CURRENT_DIR + "/../%s" % html_file):
-                #     setup(html_file=CURRENT_DIR + "/../%s" % html_file)
+                # # print('Radio button '%s' is clicked.' % button.text())
+                # html_file = 'UofO_Courses.html'
+                # if os.path.exists(CURRENT_DIR + '/../%s' % html_file):
+                #     setup(html_file=CURRENT_DIR + '/../%s' % html_file)
                 # else:
-                #     raise Exception("Could not find '%s'" % html_file)
+                #     raise Exception('Could not find '%s'' % html_file)
                 pass
 
     def selectItem(self):
         selected_item_idx = self.queryResult.selectedIndexes()[0].row()
-        # print("id selected: %d" % selected_item_idx)
-        # print("doc title: %s" % self.retrieved_doc_ids[selected_item_idx])
-        # print("doc content: %s" %
+        # print('id selected: %d' % selected_item_idx)
+        # print('doc title: %s' % self.retrieved_doc_ids[selected_item_idx])
+        # print('doc content: %s' %
         #       self.search_engine.get_doc_content(self.retrieved_doc_ids[selected_item_idx]))
         selected_doc_id = self.retrieved_doc_ids[selected_item_idx]
         doc_content = self.search_engine.get_doc_content(selected_doc_id)
@@ -219,12 +229,12 @@ class MainWindow(QWidget):
 
     def __display_course_details(self, document):
         dialog = QDialog(parent=self)
-        dialog.setWindowTitle("%s" % document.get('title'))
+        dialog.setWindowTitle('%s' % document.get('title'))
         dialog.resize(640, 480)
         vbox = QVBoxLayout()
 
         hbox1 = QHBoxLayout()
-        titelLabel = QLabel("Title: \t")
+        titelLabel = QLabel('Title: \t')
         title = QLineEdit()
         title.setText(document.get('title'))
         title.setReadOnly(True)
@@ -232,7 +242,7 @@ class MainWindow(QWidget):
         hbox1.addWidget(title)
 
         hbox2 = QHBoxLayout()
-        contentLabel = QLabel("Content: ")
+        contentLabel = QLabel('Content: ')
         content = QTextEdit()
         content.setReadOnly(True)
         content.setText(document.get('content'))
@@ -249,12 +259,12 @@ class MainWindow(QWidget):
         message_box = QMessageBox()
         message_box.setIcon(QMessageBox.Information)
         message_box.setText(message)
-        message_box.setWindowTitle("Search result message")
+        message_box.setWindowTitle('Search result message')
         message_box.setStandardButtons(QMessageBox.Ok)
         message_box.exec_()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     app = QApplication(sys.argv)
     mainWindow = MainWindow()
     sys.exit(app.exec_())

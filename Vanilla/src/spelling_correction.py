@@ -12,8 +12,14 @@ class SpellingCorrection:
     def no_correction(self):
         return not self.mapping
 
+    def correction_made(self):
+        return self.mapping
+
     def __str__(self):
-        return str(self.mapping)
+        result_str = ''
+        for k, v in self.mapping.items():
+            result_str += ("'%s' by '%s'\n" % (v, k))
+        return result_str
 
 
 # Idea from: https://stackoverflow.com/questions/29233888/edit-distance-such-as-levenshtein-taking-into-account-proximity-on-keyboard
