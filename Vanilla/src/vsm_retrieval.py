@@ -3,7 +3,7 @@ import text_processing
 from index import Index, UNFOUND_TERM_LIMIT
 from spelling_correction import SpellingCorrection, get_closest_term
 
-DOC_RETRIEVAL_LIMIT = 50
+DOC_RETRIEVAL_LIMIT = 10
 
 
 def _vectorize_query(index: Index, raw_query: str) -> (np.ndarray, SpellingCorrection):

@@ -195,17 +195,3 @@ def bigrams_2_terms(index: Index, bigrams: set) -> set:
         terms.append(set(index.secondary_index[bigram]))
     r = set.intersection(*terms)
     return r
-
-# TODO: remove
-# if __name__ == '__main__':
-#     corpus_path = '../course_corpus_full.csv'
-#
-#     # print(tf)
-#     # print({k: v for k, v in sorted(df.items(), key=lambda item: item[1], reverse=True)})
-#
-#     # idxf2 = Index(config=configuration.Configuration(stop_words_removal=True, stemming=True, normalization=True),
-#     #               corpus=corpus_path)
-#     # idxf2._save('idx_full')
-#
-#     idx = Index._load('idx_full')
-#     print(idx.get('csi'))

@@ -107,22 +107,3 @@ class SearchEngine:
 
     def __str__(self):
         return _SEConf.__str__(self.current_se_conf)
-
-
-if __name__ == '__main__':
-    corpus_path = '../course_corpus_full.csv'
-
-    se = SearchEngine(model='vsm')
-    # se.build_index(corpus_path)
-    se.load_index()
-    a, b = se.query('computr algorithm desgin')
-    print(a)
-    print(b)
-
-    se.switch_model('boolean')
-    print(se)
-
-    a,b = se.query('algor*hm AND an*ysis')
-    print(a)
-    print(b)
-    pass
