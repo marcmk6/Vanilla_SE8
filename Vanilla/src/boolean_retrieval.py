@@ -4,9 +4,11 @@ from index import Index, bigrams_2_terms, UNFOUND_TERM_LIMIT
 import wildcard_handler
 from spelling_correction import SpellingCorrection, get_closest_term
 
+DUMMY_WORD = 'DUMMY_WORD'
+
 
 def _is_operand(exp: str) -> bool:
-    return re.search(r'\(|\)|AND|OR|AND_NOT', exp) is None
+    return re.search(r'^(\(|\)|AND|OR|AND_NOT)$', exp) is None
 
 
 def _is_wildcard_query_operand(operand: str) -> bool:
@@ -130,13 +132,14 @@ def query(index: Index, raw_query: str) -> (list, SpellingCorrection):
         tmp.append(t)
 
     processed_query = ' '.join(tmp)
+    processed_query = re.sub(r'\(\s+\)', '( ' + DUMMY_WORD + ' )', processed_query)
     postfix_expr_tokens = infix_2_postfix(processed_query).split()
 
     # Spelling correction
     spelling_correction_obj = SpellingCorrection(mapping={})
     correction_candidates = []
     for idx, tkn in enumerate(postfix_expr_tokens):
-        if _is_operand(tkn) and tkn not in index.terms:
+        if _is_operand(tkn) and tkn not in index.terms and tkn != DUMMY_WORD:
             correction_candidates.append([idx, tkn, get_closest_term(word=tkn, terms=index.terms)])
     correction_made = sorted(correction_candidates, key=lambda x: index.get_term_frequency(x[2]), reverse=True)[
                       :UNFOUND_TERM_LIMIT]
@@ -149,7 +152,7 @@ def query(index: Index, raw_query: str) -> (list, SpellingCorrection):
 
     # Single word query
     if len(postfix_expr_tokens) == 1:
-        return index.get(postfix_expr_tokens.pop())
+        return index.get(postfix_expr_tokens.pop()), spelling_correction_obj
 
     operand_stack = []
     result = []
@@ -174,12 +177,3 @@ def query(index: Index, raw_query: str) -> (list, SpellingCorrection):
             operand_stack.append(result)
 
     return result, spelling_correction_obj
-
-# TODO: remove
-# if __name__ == "__main__":
-#     # print(infix_2_postfix("(*ge AND_NOT (man* OR health*))"))
-#     # print(and_not_operation([1, 2, 3], [1, 2, 4, 35]))
-#
-#     idxf2 = Index._load('idx_full')
-#
-#     print(query(idxf2, 'psyc*'))

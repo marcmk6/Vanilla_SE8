@@ -3,9 +3,8 @@ import csv
 import re
 from index import _Document
 
-SRC = '../UofO_Courses.html'
-OUT = '../course_corpus_full.csv'
-CORPUS = OUT
+COURSE_HTML = '../UofO_Courses.html'
+COURSE_CORPUS_OUTPUT = '../course_corpus_full.csv'
 
 
 class Corpus:
@@ -21,7 +20,7 @@ class Corpus:
                 self.documents[doc_id] = (_Document(doc_id, title, content))
 
     # FIXME
-    def get_doc_excerpt(self, doc_id:str) -> str:
+    def get_doc_excerpt(self, doc_id: str) -> str:
         return self.documents[doc_id].content[:50]
 
     def get_doc_title(self, doc_id: str) -> str:
@@ -31,53 +30,43 @@ class Corpus:
         return self.documents[doc_id].content
 
 
-def _separate_files(src_file):
-    end = '</html>'
-    with open(src_file, 'r') as f:
-        files = f.read().split(end)
+def preprocess_course_corpus():
+    def _separate_files(src_file):
+        end = '</html>'
+        with open(src_file, 'r') as f:
+            files = f.read().split(end)
+        return files
 
-    return files
+    def _preprocess_course_corpus(src_file):
+        soup = BeautifulSoup(src_file, 'lxml')
 
+        course_name = []
+        course_description = []
+        doc_id = []
 
-def preprocess_course_corpus(src_file):
-    soup = BeautifulSoup(src_file, 'lxml')
+        for e in soup.find_all('div', class_='courseblock'):
+            name = e.find('p', class_='courseblocktitle noindent')
+            course_description = e.find('p', class_='courseblockdesc noindent')
 
-    course_name = []
-    course_description = []
-    doc_id = []
+            if name is not None:
+                name = name.text
+                if 1 <= int(name[5]) <= 3:  # english course
+                    course_name.append(name)
 
-    for e in soup.find_all('div', class_='courseblock'):
-        name = e.find('p', class_='courseblocktitle noindent')
-        course_description = e.find('p', class_='courseblockdesc noindent')
+                    # docid = name[:8]
+                    docid = re.sub(' ', '_', name[:8])
+                    doc_id.append(docid)
 
-        if name is not None:
-            name = name.text
-            if 1 <= int(name[5]) <= 3:  # english course
-                course_name.append(name)
+                    if course_description is not None:
+                        course_description.append(course_description.text.strip('\n'))
+                    else:
+                        course_description.append('')
 
-                # docid = name[:8]
-                docid = re.sub(' ', '_', name[:8])
-                doc_id.append(docid)
+        with open(COURSE_CORPUS_OUTPUT, 'a') as o:
+            writer = csv.writer(o)
+            for docid, name, course_description in zip(doc_id, course_name, course_description):
+                writer.writerow([docid, name, course_description])
 
-                if course_description is not None:
-                    course_description.append(course_description.text.strip('\n'))
-                else:
-                    course_description.append('')
-
-    with open(OUT, 'a') as o:
-        writer = csv.writer(o)
-        for docid, name, course_description in zip(doc_id, course_name, course_description):
-            writer.writerow([docid, name, course_description])
-
-# TODO: remove
-# if __name__ == "__main__":
-#
-#     """
-#     files = _separate_files(SRC)
-#     for file in files:
-#         preprocess_course_corpus(file)
-#     """
-#     # preprocess(files[3])
-#
-#     cp = Corpus(OUT)
-#     print(cp.get_doc_excerpt('CSI_4107'))
+    files = _separate_files(COURSE_HTML)
+    for file in files:
+        _preprocess_course_corpus(file)

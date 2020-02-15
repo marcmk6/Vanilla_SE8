@@ -67,11 +67,3 @@ def query(index: Index, query: str) -> (list, SpellingCorrection):
     for i in range(0, min(len(full_results), DOC_RETRIEVAL_LIMIT)):
         top_results.append(full_results[i][0])
     return top_results, spelling_correction_obj
-
-# TODO: remove
-# if __name__ == '__main__':
-#     idx = Index._load('idx_full')
-#
-#     # print(idx.df_dict)
-#     print(query(idx, 'information system management'))
-#     pass

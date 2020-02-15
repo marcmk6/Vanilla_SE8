@@ -122,6 +122,7 @@ if __name__ == '__main__':
     se.switch_model('boolean')
     print(se)
 
-    a, b = se.query('algorihtm AND analyss AND design')
+    a,b = se.query('algor*hm AND an*ysis')
     print(a)
     print(b)
+    pass
