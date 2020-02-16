@@ -33,7 +33,7 @@ class MainWindow(QWidget):
         if not SearchEngine.check_index_integrity():
             self.__create_message_box('Please wait for the construction of index.\n'
                                       'This may take about 1 minute.\n'
-                                      'Click OK to continue.')
+                                      'Click OK to start.')
             self.search_engine.build_index(corpus_path='../course_corpus_full.csv')
         else:
             self.search_engine.load_index()
