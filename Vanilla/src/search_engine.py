@@ -1,6 +1,6 @@
 from os import listdir, makedirs, cpu_count
 from os.path import isfile, join, exists
-from multiprocessing import Process
+from multiprocessing import Pool
 from time import time
 
 from index_configuration import IndexConfiguration
@@ -38,44 +38,8 @@ class SearchEngine:
         """
         Build and save index from corpus
         """
-        if not exists(INDEX_DIR):
-            makedirs(INDEX_DIR)
-
-        self.index_confs = []
-        _idx_conf_tuples = []
-        _range = [1, 0]
-        for swr in _range:
-            for s in _range:
-                for n in _range:
-                    _idx_conf_tuples.append((swr, s, n))
-                    self.index_confs.append(
-                        IndexConfiguration(stop_words_removal=bool(swr), stemming=bool(s), normalization=bool(n)))
-
-        start = time()
-        for _conf_tuple, conf_obj in zip(_idx_conf_tuples, self.index_confs):
-            index = Index(corpus=corpus_path, config=conf_obj)
-            index.save(INDEX_DIR + 'index_' + ''.join([str(e) for e in list(_conf_tuple)]) + INDEX_FILE_EXTENSION)
-            self.indexes.append(index)
-        print('Index construction has taken %s seconds.' % round(time() - start, 4))
-
-        # Working well on macOS but not working properly on Windows
-        """
-        def _build_single_index(corpus_path, conf_obj, _conf_tuple):
-            index = Index(corpus=corpus_path, config=conf_obj)
-            index_id = ''.join([str(e) for e in list(_conf_tuple)])
-            index.save(INDEX_DIR + 'index_' + index_id + INDEX_FILE_EXTENSION)
-
-        _processes = []
-        for _conf_tuple, conf_obj in zip(_idx_conf_tuples, self.index_confs):
-            _processes.append(Process(target=_build_single_index, args=(corpus_path, conf_obj, _conf_tuple)))
-        start = time()
-        for p in _processes:
-            p.start()
-        for p in _processes:
-            p.join()
-        print('Index construction has taken %s seconds.' % round(time() - start, 4))
+        __build_index__(corpus_path)
         self.load_index()
-        """
 
     def load_index(self) -> None:
         """
@@ -151,3 +115,33 @@ class SearchEngine:
             return len(index_files) == 8
         else:
             return False
+
+
+def __index_building_worker__(corpus_path, conf_obj, _conf_tuple):
+    index = Index(corpus=corpus_path, config=conf_obj)
+    index_id = ''.join([str(e) for e in list(_conf_tuple)])
+    index.save(INDEX_DIR + 'index_' + index_id + INDEX_FILE_EXTENSION)
+
+
+def __build_index__(corpus_path):
+    if not exists(INDEX_DIR):
+        makedirs(INDEX_DIR)
+
+    index_confs = []
+    _idx_conf_tuples = []
+    _range = [1, 0]
+    for swr in _range:
+        for s in _range:
+            for n in _range:
+                _idx_conf_tuples.append((swr, s, n))
+                index_confs.append(
+                    IndexConfiguration(stop_words_removal=bool(swr), stemming=bool(s), normalization=bool(n)))
+
+    pool = Pool(cpu_count())
+    params_tuples = []
+    for i, j, k in zip([corpus_path] * len(index_confs), index_confs, _idx_conf_tuples):
+        params_tuples.append((i, j, k))
+    start = time()
+    with pool:
+        pool.starmap(__index_building_worker__, params_tuples)
+    print('time spent: %s' % (time() - start))
