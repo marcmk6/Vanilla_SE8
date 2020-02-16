@@ -34,12 +34,6 @@ class SearchEngine:
         self.current_se_conf = _SearchEngineConf(model=model, index_conf=index_conf)
         self.corpus = Corpus(corpus_file=corpus)
 
-    @staticmethod
-    def __build_single_index(corpus_path, conf_obj, _conf_tuple):
-        index = Index(corpus=corpus_path, config=conf_obj)
-        index_id = ''.join([str(e) for e in list(_conf_tuple)])
-        index.save(INDEX_DIR + 'index_' + index_id + INDEX_FILE_EXTENSION)
-
     def build_index(self, corpus_path: str) -> None:
         """
         Build and save index from corpus
@@ -57,12 +51,12 @@ class SearchEngine:
                     self.index_confs.append(
                         IndexConfiguration(stop_words_removal=bool(swr), stemming=bool(s), normalization=bool(n)))
 
-        # start = time()
-        # for _conf_tuple, conf_obj in zip(_idx_conf_tuples, self.index_confs):
-        #     index = Index(corpus=corpus_path, config=conf_obj)
-        #     index.save(INDEX_DIR + 'index_' + ''.join([str(e) for e in list(_conf_tuple)]) + INDEX_FILE_EXTENSION)
-        #     self.indexes.append(index)
-        # print('Index construction has taken %s seconds.' % round(time() - start, 4))
+        start = time()
+        for _conf_tuple, conf_obj in zip(_idx_conf_tuples, self.index_confs):
+            index = Index(corpus=corpus_path, config=conf_obj)
+            index.save(INDEX_DIR + 'index_' + ''.join([str(e) for e in list(_conf_tuple)]) + INDEX_FILE_EXTENSION)
+            self.indexes.append(index)
+        print('Index construction has taken %s seconds.' % round(time() - start, 4))
 
         # Working well on macOS but not working properly on Windows
         """
@@ -70,10 +64,10 @@ class SearchEngine:
             index = Index(corpus=corpus_path, config=conf_obj)
             index_id = ''.join([str(e) for e in list(_conf_tuple)])
             index.save(INDEX_DIR + 'index_' + index_id + INDEX_FILE_EXTENSION)
-        """
+
         _processes = []
         for _conf_tuple, conf_obj in zip(_idx_conf_tuples, self.index_confs):
-            _processes.append(Process(target=self.__build_single_index, args=(corpus_path, conf_obj, _conf_tuple)))
+            _processes.append(Process(target=_build_single_index, args=(corpus_path, conf_obj, _conf_tuple)))
         start = time()
         for p in _processes:
             p.start()
@@ -81,7 +75,7 @@ class SearchEngine:
             p.join()
         print('Index construction has taken %s seconds.' % round(time() - start, 4))
         self.load_index()
-
+        """
 
     def load_index(self) -> None:
         """
