@@ -19,15 +19,17 @@ def run_test():
     se = SearchEngine(corpus='../course_corpus_full.csv', model='boolean')
     se.load_index()
     for q in boolean_retrieval_test_query:
-        r, correction = se.query(q)
+        r = se.query(q)
+        lst, correction = r.doc_id_lst, r.correction
         print('Query: %s' % (q))
-        print(r[:5])
+        print(lst[:5])
         print(correction)
     se.switch_model()
     for q in vsm_retrieval_test_query:
-        r, correction = se.query(q)
+        r = se.query(q)
+        lst, correction = r.doc_id_lst, r.correction
         print('Query: %s' % (q))
-        print(r[:5])
+        print(lst[:5])
         print(correction)
 
     print()

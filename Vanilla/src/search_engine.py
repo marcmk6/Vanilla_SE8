@@ -1,5 +1,8 @@
-from os import listdir, makedirs
+from os import listdir, makedirs, cpu_count
 from os.path import isfile, join, exists
+from multiprocessing import Process
+from time import time
+
 from index_configuration import IndexConfiguration
 from index import Index, _SearchResult
 import vsm_retrieval
@@ -35,31 +38,47 @@ class SearchEngine:
         """
         Build and save index from corpus
         """
-
         if not exists(INDEX_DIR):
             makedirs(INDEX_DIR)
 
         self.index_confs = []
-        _conf_tuples = []
+        _idx_conf_tuples = []
         _range = [1, 0]
         for swr in _range:
             for s in _range:
                 for n in _range:
-                    _conf_tuples.append((swr, s, n))
+                    _idx_conf_tuples.append((swr, s, n))
                     self.index_confs.append(
                         IndexConfiguration(stop_words_removal=bool(swr), stemming=bool(s), normalization=bool(n)))
 
-        self.indexes = []
-        # TODO: multiprocessing?
-        for _conf_tuple, conf_obj in zip(_conf_tuples, self.index_confs):
+        # start = time()
+        # for _conf_tuple, conf_obj in zip(_idx_conf_tuples, self.index_confs):
+        #     index = Index(corpus=corpus_path, config=conf_obj)
+        #     index.save(INDEX_DIR + 'index_' + ''.join([str(e) for e in list(_conf_tuple)]) + INDEX_FILE_EXTENSION)
+        #     self.indexes.append(index)
+        # print('Index construction has taken %s seconds.' % round(time() - start, 4))
+
+        def _build_single_index(corpus_path, conf_obj, _conf_tuple):
             index = Index(corpus=corpus_path, config=conf_obj)
-            index.save(INDEX_DIR + 'index_' + ''.join([str(e) for e in list(_conf_tuple)]) + INDEX_FILE_EXTENSION)
-            self.indexes.append(index)
+            index_id = ''.join([str(e) for e in list(_conf_tuple)])
+            index.save(INDEX_DIR + 'index_' + index_id + INDEX_FILE_EXTENSION)
+
+        _processes = []
+        for _conf_tuple, conf_obj in zip(_idx_conf_tuples, self.index_confs):
+            _processes.append(Process(target=_build_single_index, args=(corpus_path, conf_obj, _conf_tuple)))
+        start = time()
+        for p in _processes:
+            p.start()
+        for p in _processes:
+            p.join()
+        print('Index construction has taken %s seconds.' % round(time() - start, 4))
+        self.load_index()
 
     def load_index(self) -> None:
         """
         Load existing indexes
         """
+        assert self.check_index_integrity()
         self.indexes = []
         index_files = [f for f in listdir(INDEX_DIR) if isfile(join(INDEX_DIR, f)) and f.endswith(INDEX_FILE_EXTENSION)]
         index_files = sorted(index_files, reverse=True)
@@ -120,3 +139,12 @@ class SearchEngine:
 
     def __str__(self):
         return _SearchEngineConf.__str__(self.current_se_conf)
+
+    @staticmethod
+    def check_index_integrity() -> bool:
+        if exists(INDEX_DIR):
+            index_files = [f for f in listdir(INDEX_DIR) if
+                           isfile(join(INDEX_DIR, f)) and f.endswith(INDEX_FILE_EXTENSION)]
+            return len(index_files) == 8
+        else:
+            return False

@@ -41,8 +41,8 @@ def preprocess_course_corpus():
         soup = BeautifulSoup(src_file, 'lxml')
 
         course_name = []
-        course_description = []
-        doc_id = []
+        course_description_lst = []
+        doc_id_lst = []
 
         for e in soup.find_all('div', class_='courseblock'):
             name = e.find('p', class_='courseblocktitle noindent')
@@ -54,18 +54,18 @@ def preprocess_course_corpus():
                     course_name.append(name)
 
                     # docid = name[:8]
-                    docid = re.sub(' ', '_', name[:8])
-                    doc_id.append(docid)
+                    doc_id = re.sub(' ', '_', name[:8])
+                    doc_id_lst.append(doc_id)
 
                     if course_description is not None:
-                        course_description.append(course_description.text.strip('\n'))
+                        course_description_lst.append(course_description.text.strip('\n'))
                     else:
-                        course_description.append('')
+                        course_description_lst.append('')
 
         with open(COURSE_CORPUS_OUTPUT, 'a') as o:
             writer = csv.writer(o)
-            for docid, name, course_description in zip(doc_id, course_name, course_description):
-                writer.writerow([docid, name, course_description])
+            for doc_id, name, course_description in zip(doc_id_lst, course_name, course_description_lst):
+                writer.writerow([doc_id, name, course_description])
 
     files = _separate_files(COURSE_HTML)
     for file in files:

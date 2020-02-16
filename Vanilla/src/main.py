@@ -8,6 +8,7 @@ from PyQt5.QtGui import QIcon, QStandardItemModel, QStandardItem
 from PyQt5.QtCore import pyqtSlot
 
 from search_engine import SearchEngine
+from corpus import preprocess_course_corpus
 
 BOOLEAN_MODEL_BUTTON_TEXT = 'Boolean Model'
 VSM_MODEL_BUTTON_TEXT = 'VSM Model'
@@ -26,8 +27,16 @@ class MainWindow(QWidget):
         self.initUI()
 
     def setup_se(self):
+        if not os.path.exists('../course_corpus_full.csv'):
+            preprocess_course_corpus()
         self.search_engine = SearchEngine(corpus='../course_corpus_full.csv', model='vsm')  # FIXME
-        self.search_engine.load_index()
+        if not SearchEngine.check_index_integrity():
+            self.__create_message_box('Please wait for the construction of index.\n'
+                                      'This may take about 1 minute.\n'
+                                      'Click OK to continue.')
+            self.search_engine.build_index(corpus_path='../course_corpus_full.csv')
+        else:
+            self.search_engine.load_index()
 
     def initUI(self):
         # setup entire layout
@@ -38,7 +47,7 @@ class MainWindow(QWidget):
         self.resize(640, 480)
 
         # main window title
-        self.setWindowTitle('Search Engine - Vanilla SE 8')
+        self.setWindowTitle('Vanilla SE 8')
 
         # main window icon
         self.setWindowIcon(QIcon(os.path.dirname(
@@ -125,7 +134,6 @@ class MainWindow(QWidget):
         # add a search button
         searchButtonLayout = QHBoxLayout()
         self.searchButton = QPushButton('Search')
-        # self.searchButton.setToolTip('This is a search button')
         # self.searchButton.move(20, 400)
         self.searchButton.clicked.connect(self.click_search)
         searchButtonLayout.addStretch(1)
@@ -259,12 +267,14 @@ class MainWindow(QWidget):
         message_box = QMessageBox()
         message_box.setIcon(QMessageBox.Information)
         message_box.setText(message)
-        message_box.setWindowTitle('Search result message')
+        # message_box.setWindowTitle('Search result message')
         message_box.setStandardButtons(QMessageBox.Ok)
         message_box.exec_()
 
 
 if __name__ == '__main__':
+    raw_src = '../UofO_Courses.html'
+    # TODO
     app = QApplication(sys.argv)
     mainWindow = MainWindow()
     sys.exit(app.exec_())
