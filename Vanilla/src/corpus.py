@@ -62,7 +62,7 @@ def preprocess_course_corpus():
                     else:
                         course_description_lst.append('')
 
-        with open(COURSE_CORPUS_OUTPUT, 'a') as o:
+        with open(COURSE_CORPUS_OUTPUT, 'a', newline='') as o:
             writer = csv.writer(o)
             for doc_id, name, course_description in zip(doc_id_lst, course_name, course_description_lst):
                 writer.writerow([doc_id, name, course_description])
