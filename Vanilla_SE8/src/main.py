@@ -47,7 +47,7 @@ class MainWindow(QWidget):
         self.resize(640, 480)
 
         # main window title
-        self.setWindowTitle('Vanilla SE 8')
+        self.setWindowTitle('Vanilla_SE8 SE 8')
 
         # main window icon
         self.setWindowIcon(QIcon(os.path.dirname(

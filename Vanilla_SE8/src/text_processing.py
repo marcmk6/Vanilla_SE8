@@ -44,10 +44,10 @@ def process(string: str, config: IndexConfiguration) -> list:
     return tokens
 
 
-# if __name__ == '__main__':
-#     string = 'CSI_4107,CSI 4107 Information Retrieval and the Internet (3 units),Basic principles of Information Retriev' \
-#              'al.  Indexing methods.  Query processing.  Linguistic aspects of Information Retrieval.  Agents and artifi' \
-#              'cial intelligence approaches to Information Retrieval.  Relation of Information Retrieval to the World Wid' \
-#              'e Web.  Search engines. Servers and clients.  Browser and server side programming for Information Retrieval.'
-#
-#     print(process(string))
+if __name__ == '__main__':
+    string = 'CSI_4107,CSI 4107 Information Retrieval and the Internet (3 units),Basic principles of Information Retriev' \
+             'al.  Indexing methods.  Query processing.  Linguistic aspects of Information Retrieval.  Agents and artifi' \
+             'cial intelligence approaches to Information Retrieval.  Relation of Information Retrieval to the World Wid' \
+             'e Web.  Search engines. Servers and clients.  Browser and server side programming for Information Retrieval.'
+
+    print(process(string,config=IndexConfiguration(True, True, True)))

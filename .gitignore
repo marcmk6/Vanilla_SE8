@@ -2,5 +2,5 @@
 .idea
 __pycache__
 .idx
-Vanilla/*.csv
-Vanilla/index
+Vanilla_SE8/*.csv
+Vanilla_SE8/index
