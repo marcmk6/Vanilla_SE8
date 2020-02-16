@@ -51,13 +51,15 @@ class SearchEngine:
                     self.index_confs.append(
                         IndexConfiguration(stop_words_removal=bool(swr), stemming=bool(s), normalization=bool(n)))
 
-        # start = time()
-        # for _conf_tuple, conf_obj in zip(_idx_conf_tuples, self.index_confs):
-        #     index = Index(corpus=corpus_path, config=conf_obj)
-        #     index.save(INDEX_DIR + 'index_' + ''.join([str(e) for e in list(_conf_tuple)]) + INDEX_FILE_EXTENSION)
-        #     self.indexes.append(index)
-        # print('Index construction has taken %s seconds.' % round(time() - start, 4))
+        start = time()
+        for _conf_tuple, conf_obj in zip(_idx_conf_tuples, self.index_confs):
+            index = Index(corpus=corpus_path, config=conf_obj)
+            index.save(INDEX_DIR + 'index_' + ''.join([str(e) for e in list(_conf_tuple)]) + INDEX_FILE_EXTENSION)
+            self.indexes.append(index)
+        print('Index construction has taken %s seconds.' % round(time() - start, 4))
 
+        # Working well on macOS but not working properly on Windows
+        """
         def _build_single_index(corpus_path, conf_obj, _conf_tuple):
             index = Index(corpus=corpus_path, config=conf_obj)
             index_id = ''.join([str(e) for e in list(_conf_tuple)])
@@ -73,6 +75,7 @@ class SearchEngine:
             p.join()
         print('Index construction has taken %s seconds.' % round(time() - start, 4))
         self.load_index()
+        """
 
     def load_index(self) -> None:
         """
