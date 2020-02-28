@@ -4,3 +4,4 @@ __pycache__
 .idx
 Vanilla_SE8/*.csv
 Vanilla_SE8/index
+Vanilla_SE8/corpus

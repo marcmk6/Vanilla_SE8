@@ -20,17 +20,17 @@ class _Document:
 
 class Index:
 
-    def __init__(self, config=None, corpus=None):
+    def __init__(self, config=None, corpus_path=None):
         """
         The index can be either construct from a corpus or from dicts
         :param config:
-        :param corpus:
+        :param corpus_path:
         """
 
         self.config = config
-        self.terms = dictionary.build_vocabulary(corpus, self.config)
+        self.terms = dictionary.build_vocabulary(corpus_path, self.config)
 
-        docs = self._create_documents(corpus)
+        docs = self._create_documents(corpus_path)
         id_lst = []
         for doc in docs:
             id_lst.append(doc.doc_id)
@@ -49,14 +49,14 @@ class Index:
         self.secondary_index = self._build_secondary_index()
 
     @staticmethod
-    def _create_documents(corpus):
+    def _create_documents(corpus_path):
         """
         Create Document objects from corpus
-        :param corpus: path to the corpus file
+        :param corpus_path: path to the corpus file
         :return: list of Document objects
         """
         docs = []
-        with open(corpus, 'r') as corpus_file:
+        with open(corpus_path, 'r') as corpus_file:
             reader = csv.reader(corpus_file)
             for row in reader:
                 doc_id = row[0]

@@ -118,7 +118,7 @@ class SearchEngine:
 
 
 def __index_building_worker__(corpus_path, conf_obj, _conf_tuple):
-    index = Index(corpus=corpus_path, config=conf_obj)
+    index = Index(corpus_path=corpus_path, config=conf_obj)
     index_id = ''.join([str(e) for e in list(_conf_tuple)])
     index.save(INDEX_DIR + 'index_' + index_id + INDEX_FILE_EXTENSION)
 

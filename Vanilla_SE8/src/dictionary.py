@@ -14,7 +14,7 @@ def build_vocabulary(corpus, config: IndexConfiguration) -> list:
             content = row[2]
 
             # to_be_processed = [title, description]
-            to_be_processed = [title + content]
+            to_be_processed = [title.strip('\n') + content.strip('\n')]
 
             for e in to_be_processed:
                 processed_tokens = text_processing.process(string=e, config=config)

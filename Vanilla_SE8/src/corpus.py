@@ -1,11 +1,13 @@
 from bs4 import BeautifulSoup
 import csv
 import re
+import os
 from index import _Document
 
 COURSE_HTML = '../UofO_Courses.html'
 COURSE_CORPUS_OUTPUT = '../course_corpus_full.csv'
-
+REUTERS_SOURCE_DIR = '../corpus/reuters21578/'
+REUTERS_CORPUS_OUTPUT = '../corpus/reuters_corpus.csv'
 
 class Corpus:
 
@@ -71,3 +73,36 @@ def preprocess_course_corpus():
     files = _separate_files(COURSE_HTML)
     for file in files:
         _preprocess_course_corpus(file)
+
+
+def preprocess_reuters_corpus():
+
+    target_files = [f for f in os.listdir(REUTERS_SOURCE_DIR) if f.endswith('.sgm')]
+    target_files = sorted(target_files)
+
+    # Extract information
+    doc_ids = []
+    contents = []
+    topics_lst = []
+    titles = []
+    for target_file in target_files:
+        with open(REUTERS_SOURCE_DIR + target_file, 'r', encoding='ISO-8859-1') as f:
+            src_file = f.read()
+        soup = BeautifulSoup(src_file, 'html.parser')
+        for e in soup.find_all('reuters'):
+            doc_id = e.get('newid')
+            content = e.find('text')
+            main_content = (lambda x: x.string if x is not None else '')(content.find('body'))
+            topics = (lambda x: list(map(lambda y: y.string, x)) if x != [] else x)(e.find('topics').find_all('d'))
+            title = (lambda x: x.string if x is not None else '')(content.find('title'))
+
+            doc_ids.append(doc_id)
+            contents.append(main_content.strip())
+            topics_lst.append(topics)
+            titles.append(title)
+
+    # Write corpus
+    with open(REUTERS_CORPUS_OUTPUT, 'w', newline='') as o:
+        writer = csv.writer(o)
+        for doc_id, title, content, topics in zip(doc_ids, contents, topics_lst, titles):
+            writer.writerow([doc_id, title, content, topics])

@@ -12,7 +12,7 @@ from corpus import preprocess_course_corpus
 
 BOOLEAN_MODEL_BUTTON_TEXT = 'Boolean Model'
 VSM_MODEL_BUTTON_TEXT = 'VSM Model'
-
+tmp_corpus = '../corpus/reuters_corpus.csv'
 
 # Inspired from https://pythonspot.com/gui/
 # Modele 1 - User Interface
@@ -27,14 +27,14 @@ class MainWindow(QWidget):
         self.initUI()
 
     def setup_se(self):
-        if not os.path.exists('../course_corpus_full.csv'):
+        if not os.path.exists(tmp_corpus):
             preprocess_course_corpus()
-        self.search_engine = SearchEngine(corpus='../course_corpus_full.csv', model='vsm')  # FIXME
+        self.search_engine = SearchEngine(corpus=tmp_corpus, model='vsm')  # FIXME
         if not SearchEngine.check_index_integrity():
             self.__create_message_box('Please wait for the construction of index.\n'
                                       'This may take about 1 minute.\n'
                                       'Click OK to start.')
-            self.search_engine.build_index(corpus_path='../course_corpus_full.csv')
+            self.search_engine.build_index(corpus_path=tmp_corpus)
         else:
             self.search_engine.load_index()
 
@@ -81,7 +81,7 @@ class MainWindow(QWidget):
         modelLayout.addStretch(1)
         vbox.addLayout(modelLayout)
 
-        # add choice of collection: UofO catalog, ..
+        # add choice of collection: UofO catalog, Reuters
         collectionLabel = QLabel('Choice of collection: \t')
         collectionLayout = QHBoxLayout()
         collectionButtonGroup = QButtonGroup(self)
@@ -91,6 +91,14 @@ class MainWindow(QWidget):
         collectionLayout.addWidget(collectionLabel)
         collectionLayout.addWidget(self.button_uo_courses)
         collectionButtonGroup.addButton(self.button_uo_courses)
+        collectionLayout.addStretch(1)
+        # Reuters
+        self.button_reuters = QRadioButton('Reuters')
+        self.button_reuters.setChecked(False)
+        self.button_reuters.toggled.connect(lambda: self.changeChoiceState(self.button_reuters))
+        collectionLayout.addWidget(collectionLabel)
+        collectionLayout.addWidget(self.button_reuters)
+        collectionButtonGroup.addButton(self.button_reuters)
         collectionLayout.addStretch(1)
         vbox.addLayout(collectionLayout)
 
@@ -222,6 +230,8 @@ class MainWindow(QWidget):
                 #     setup(html_file=CURRENT_DIR + '/../%s' % html_file)
                 # else:
                 #     raise Exception('Could not find '%s'' % html_file)
+                pass
+            elif button.text() == 'Reuters':
                 pass
 
     def selectItem(self):
