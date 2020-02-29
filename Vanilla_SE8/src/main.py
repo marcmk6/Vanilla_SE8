@@ -8,7 +8,7 @@ from PyQt5.QtGui import QIcon, QStandardItemModel, QStandardItem
 from PyQt5.QtCore import pyqtSlot
 
 from search_engine import SearchEngine
-from corpus import preprocess_course_corpus
+from corpus import preprocess_course_corpus, preprocess_reuters_corpus
 
 BOOLEAN_MODEL_BUTTON_TEXT = 'Boolean Model'
 VSM_MODEL_BUTTON_TEXT = 'VSM Model'
@@ -29,6 +29,7 @@ class MainWindow(QWidget):
     def setup_se(self):
         if not os.path.exists(tmp_corpus):
             preprocess_course_corpus()
+            preprocess_reuters_corpus()
         self.search_engine = SearchEngine(corpus=tmp_corpus, model='vsm')  # FIXME
         if not SearchEngine.check_index_integrity():
             self.__create_message_box('Please wait for the construction of index.\n'

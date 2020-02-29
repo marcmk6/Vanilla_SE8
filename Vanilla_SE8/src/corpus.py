@@ -77,7 +77,7 @@ def preprocess_course_corpus():
 
 def preprocess_reuters_corpus():
 
-    target_files = [f for f in os.listdir(REUTERS_SOURCE_DIR) if f.endswith('.sgm')]
+    target_files = [f for f in os.listdir(REUTERS_SOURCE_DIR) if f.endswith('3.sgm')]
     target_files = sorted(target_files)
 
     # Extract information
@@ -104,5 +104,5 @@ def preprocess_reuters_corpus():
     # Write corpus
     with open(REUTERS_CORPUS_OUTPUT, 'w', newline='') as o:
         writer = csv.writer(o)
-        for doc_id, title, content, topics in zip(doc_ids, contents, topics_lst, titles):
+        for doc_id, title, content, topics in zip(doc_ids, titles, contents, topics_lst):
             writer.writerow([doc_id, title, content, topics])
