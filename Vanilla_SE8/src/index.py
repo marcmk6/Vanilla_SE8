@@ -3,6 +3,8 @@ import dictionary
 import pickle
 import numpy as np
 import re
+import shelve
+
 import text_processing
 from wildcard_handler import get_bigrams, bigram_2_regex
 from spelling_correction import SpellingCorrection
@@ -144,6 +146,9 @@ class Index:
             return []
 
     def save(self, out) -> None:
+        self._save_pickle(out)
+
+    def _save_pickle(self, out) -> None:
         """
         Save the Index object by serializing
         :param out: path to the output
@@ -152,8 +157,23 @@ class Index:
         with open(out, 'wb') as f:
             pickle.dump(self, f)
 
+    def _save_shelve(self, out) -> None:
+        s = shelve.open(out)
+        s['config'] = self.config
+        s['df_dict'] = self.df_dict
+        s['doc_count'] = self.doc_count
+        s['docid_tf_dict'] = self.docid_tf_dict
+        s['secondary_index'] = self.secondary_index
+        s['terms'] = self.terms
+        s['tf_idf_matrix'] = self.tf_idf_matrix
+        s.close()
+
     @staticmethod
     def load(index_file):
+        return Index._load_pickle(index_file)
+
+    @staticmethod
+    def _load_pickle(index_file):
         """
         Load the Index object
         :param index_file: path to the index file

@@ -77,7 +77,7 @@ def preprocess_course_corpus():
 
 def preprocess_reuters_corpus():
 
-    target_files = [f for f in os.listdir(REUTERS_SOURCE_DIR) if f.endswith('3.sgm')]
+    target_files = [f for f in os.listdir(REUTERS_SOURCE_DIR) if f.endswith('3.sgm')]# FIXME
     target_files = sorted(target_files)
 
     # Extract information
