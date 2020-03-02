@@ -1,6 +1,3 @@
-import re
-
-
 def get_bigrams(word: str) -> set:
     chars = ['$'] + [char for char in word if char != '*'] + ['$']
     bigrams = []
@@ -18,6 +15,7 @@ def get_bigrams(word: str) -> set:
 
 
 def bigram_2_regex(bigram: str) -> str:
+    """DEPRECATED"""
     other_chars = '[a-zA-Z]+'
     if bigram[0] == '$':
         bigram = re.sub('\$', '', bigram)
@@ -26,3 +24,13 @@ def bigram_2_regex(bigram: str) -> str:
         return other_chars + bigram
     else:
         return bigram
+
+
+def bigram_term_matched(bigram: str, term: str) -> bool:
+    if bigram[0] == '$':
+        return term[0] == bigram[1]
+    elif bigram[-1] == '$':
+        return term[-1] == bigram[-2]
+    else:
+        return bigram in term
+

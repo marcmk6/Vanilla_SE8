@@ -6,7 +6,7 @@ import re
 import shelve
 
 import text_processing
-from wildcard_handler import get_bigrams, bigram_2_regex
+from wildcard_handler import get_bigrams, bigram_term_matched
 from spelling_correction import SpellingCorrection
 
 UNFOUND_TERM_LIMIT = 3
@@ -46,6 +46,8 @@ class Index:
 
         tf_matrix = self._get_tf_matrix()
         df_matrix = self._get_df_matrix()
+
+        # FIXME: use sparse matrix?
         self.tf_idf_matrix = self._get_tf_idf_matrix(tf_matrix, df_matrix, n=self.doc_count)
 
         self.secondary_index = self._build_secondary_index()
@@ -157,17 +159,6 @@ class Index:
         with open(out, 'wb') as f:
             pickle.dump(self, f)
 
-    def _save_shelve(self, out) -> None:
-        s = shelve.open(out)
-        s['config'] = self.config
-        s['df_dict'] = self.df_dict
-        s['doc_count'] = self.doc_count
-        s['docid_tf_dict'] = self.docid_tf_dict
-        s['secondary_index'] = self.secondary_index
-        s['terms'] = self.terms
-        s['tf_idf_matrix'] = self.tf_idf_matrix
-        s.close()
-
     @staticmethod
     def load(index_file):
         return Index._load_pickle(index_file)
@@ -188,9 +179,11 @@ class Index:
         return ''
 
     def _build_secondary_index(self):
+        """Build bigram index"""
 
         secondary_index = {}
 
+        # Get all possible bigrams from terms
         all_bigrams = set()
         for term in self.terms:
             if re.search('^[a-zA-Z]{2,}$', term) is not None:
@@ -199,7 +192,9 @@ class Index:
         for bigram in list(all_bigrams):
             matched_terms = []
             for term in self.terms:
-                if re.search(bigram_2_regex(bigram), term) is not None:
+                # if re.search(bigram_2_regex(bigram), term) is not None:
+                #     matched_terms.append(term)
+                if bigram_term_matched(bigram=bigram, term=term):
                     matched_terms.append(term)
             secondary_index[bigram] = sorted(matched_terms)  # FIXME: sort or not?
 
