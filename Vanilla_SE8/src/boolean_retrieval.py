@@ -8,11 +8,12 @@ DUMMY_WORD = 'DUMMY_WORD'
 
 
 def _is_operand(exp: str) -> bool:
-    return re.search(r'^(\(|\)|AND|OR|AND_NOT)$', exp) is None
+    operators = ['(', ')', 'AND', 'OR', 'AND_NOT']
+    return exp not in operators
 
 
 def _is_wildcard_query_operand(operand: str) -> bool:
-    return re.search(r'\*', operand) is not None
+    return '*' in operand
 
 
 # ref: https://runestone.academy/runestone/books/published/pythonds/BasicDS/InfixPrefixandPostfixExpressions.html
@@ -24,8 +25,8 @@ def infix_2_postfix(infix_expr: str) -> str:
 
     tokens_str = ''
     for t in infix_expr.split():
-        t = re.sub(r'\(', '( ', t)
-        t = re.sub(r'\)', ' )', t)
+        t = t.replace('(', '( ')
+        t = t.replace(')', ' )')
         tokens_str += t + ' '
     tokens = tokens_str.split()
 
@@ -108,7 +109,7 @@ def perform_bool_operation(operator: str, operand_1: list, operand_2: list) -> l
 
 
 def equivalences_2_query(equivalent_words: set, original_wildcard_query: str) -> str:
-    regex = re.sub(r'\*', '[a-zA-Z]*', original_wildcard_query)
+    regex = original_wildcard_query.replace('*', '[a-zA-Z]*')
     t = set()
     for word in equivalent_words:
         if re.search(regex, word) is not None:
@@ -117,8 +118,8 @@ def equivalences_2_query(equivalent_words: set, original_wildcard_query: str) ->
 
 
 def query(index: Index, raw_query: str) -> _SearchResult:
-    raw_query = re.sub(r'\(', ' ( ', raw_query)
-    raw_query = re.sub(r'\)', ' ) ', raw_query)
+    raw_query = raw_query.replace('(', '( ')
+    raw_query = raw_query.replace(')', ' )')
 
     tmp = []
     for t in raw_query.split():
@@ -154,7 +155,7 @@ def query(index: Index, raw_query: str) -> _SearchResult:
     if len(postfix_expr_tokens) == 1:
         retrieved_doc_ids = index.get(postfix_expr_tokens.pop())
         tmp = _SearchResult(doc_id_lst=retrieved_doc_ids, correction=spelling_correction_obj,
-                             result_scores=[1]*len(retrieved_doc_ids))
+                            result_scores=[1] * len(retrieved_doc_ids))
         return tmp
 
     operand_stack = []
@@ -179,5 +180,6 @@ def query(index: Index, raw_query: str) -> _SearchResult:
             result = perform_bool_operation(expr_token, operand_1, operand_2)
             operand_stack.append(result)
 
-    search_result = _SearchResult(doc_id_lst=result, correction=spelling_correction_obj, result_scores=[1] * len(result))
+    search_result = _SearchResult(doc_id_lst=result, correction=spelling_correction_obj,
+                                  result_scores=[1] * len(result))
     return search_result

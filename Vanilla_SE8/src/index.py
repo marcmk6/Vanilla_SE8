@@ -1,10 +1,9 @@
 import csv
-import dictionary
 import pickle
 import numpy as np
-import re
-import shelve
+from scipy.sparse import csc_matrix
 
+import dictionary
 import text_processing
 from wildcard_handler import get_bigrams, bigram_term_matched
 from spelling_correction import SpellingCorrection
@@ -23,11 +22,6 @@ class _Document:
 class Index:
 
     def __init__(self, config=None, corpus_path=None):
-        """
-        The index can be either construct from a corpus or from dicts
-        :param config:
-        :param corpus_path:
-        """
 
         self.config = config
         self.terms = dictionary.build_vocabulary(corpus_path, self.config)
@@ -44,11 +38,8 @@ class Index:
 
         self.doc_count = len(self.doc_ids)
 
-        tf_matrix = self._get_tf_matrix()
-        df_matrix = self._get_df_matrix()
-
-        # FIXME: use sparse matrix?
-        self.tf_idf_matrix = self._get_tf_idf_matrix(tf_matrix, df_matrix, n=self.doc_count)
+        self.tf_idf_matrix = self._get_tf_idf_matrix(tf_matrix=self._get_tf_matrix(), df_matrix=self._get_df_matrix(),
+                                                     n=self.doc_count)
 
         self.secondary_index = self._build_secondary_index()
 
@@ -94,31 +85,39 @@ class Index:
         return docid_tf_dict, df_dict
 
     @staticmethod
-    def _get_tf_idf_matrix(tf_arr: np.ndarray, df_arr: np.ndarray, n: int) -> np.ndarray:
+    def _get_tf_idf_matrix(tf_matrix: csc_matrix, df_matrix: csc_matrix, n: int) -> csc_matrix:
         """
         Calculate tf-idf
-        :param tf_arr: term frequency, dimension (d,v)
-        :param df_arr: document frequency, dimension (d,v)
+        :param tf_matrix: term frequency, dimension (d,v)
+        :param df_matrix: document frequency, dimension (d,v)
         :param n: number of documents
         :return: tf-idf in numpy.ndarray format, dimension (d,v)
         """
-        return np.log10(n / (df_arr + 1)) * np.log10(1 + tf_arr)
+        df_matrix.data = np.log10(n / (df_matrix.data + 1))
+        tf_matrix.data = np.log10(1 + tf_matrix.data)
+        tmp = df_matrix.multiply(tf_matrix)
+        return tmp
 
-    def _get_df_matrix(self) -> np.ndarray:
+    def _get_df_matrix(self) -> csc_matrix:
         """
         Calculate raw document frequency
         :return: numpy.ndarray (d, v)
         """
+        '''
         vocabulary_size = len(self.df_dict.keys())
 
         df_lst = list(self.df_dict.values())
 
         tmp = [df_lst] * self.doc_count
         tmp = np.asarray(tmp).reshape((self.doc_count, vocabulary_size))
+        '''
+        df_lst = list(self.df_dict.values())
+        tmp = [df_lst] * self.doc_count
+        tmp = csc_matrix(tmp)
 
         return tmp
 
-    def _get_tf_matrix(self) -> np.ndarray:
+    def _get_tf_matrix(self) -> csc_matrix:
         """
         Calculate raw term frequency
         :return:  numpy.ndarray (d,v)
@@ -137,8 +136,8 @@ class Index:
                 col[idx] = tf
             lst.append(col)
 
-        tf_matrix = np.asarray(lst)
-        tf_matrix = np.transpose(tf_matrix)
+        tf_matrix = np.asarray(lst).transpose()
+        tf_matrix = csc_matrix(tf_matrix)
         return tf_matrix
 
     def get(self, term: str) -> list:
@@ -186,7 +185,7 @@ class Index:
         # Get all possible bigrams from terms
         all_bigrams = set()
         for term in self.terms:
-            if re.search('^[a-zA-Z]{2,}$', term) is not None:
+            if term.isalpha() and len(term) >= 2:
                 all_bigrams = all_bigrams.union(get_bigrams(term))
 
         for bigram in list(all_bigrams):

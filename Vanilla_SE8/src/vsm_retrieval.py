@@ -1,4 +1,5 @@
 import numpy as np
+
 import text_processing
 from index import Index, UNFOUND_TERM_LIMIT, _SearchResult
 from spelling_correction import SpellingCorrection, get_closest_term
@@ -18,7 +19,6 @@ def _vectorize_query(index: Index, raw_query: str) -> (np.ndarray, SpellingCorre
     for t in raw_query.split():
         tokens.append(text_processing.process(string=t, config=index.config)[0])
 
-    # terms = list(index.df_dict.keys())
     terms = index.terms
     vectorized_query = [0] * len(terms)
 
@@ -34,16 +34,16 @@ def _vectorize_query(index: Index, raw_query: str) -> (np.ndarray, SpellingCorre
     spelling_correction_obj = SpellingCorrection(mapping={})
     if len(terms_not_found) != 0:
 
-        unfounded_terms_correction = []
+        unfound_terms_correction = []
         for term_not_found in terms_not_found:
             correction = get_closest_term(word=term_not_found, terms=terms)
-            unfounded_terms_correction.append((term_not_found, correction))
+            unfound_terms_correction.append((term_not_found, correction))
 
         # Take top N most likely candidates
-        unfounded_terms_correction = sorted(unfounded_terms_correction, key=lambda x: index.get_term_frequency(x[1]),
+        unfound_terms_correction = sorted(unfound_terms_correction, key=lambda x: index.get_term_frequency(x[1]),
                                             reverse=True)[:UNFOUND_TERM_LIMIT]
 
-        for unfound_term, correction in unfounded_terms_correction:
+        for unfound_term, correction in unfound_terms_correction:
             spelling_correction_obj.mapping[unfound_term] = correction
             # Add correction back to query vector
             index = terms.index(correction)
@@ -54,7 +54,7 @@ def _vectorize_query(index: Index, raw_query: str) -> (np.ndarray, SpellingCorre
 
 def query(index: Index, query: str) -> _SearchResult:
     vectorized_query, spelling_correction_obj = _vectorize_query(index, query)
-    ranking = np.dot(index.tf_idf_matrix, vectorized_query).tolist()
+    ranking = index.tf_idf_matrix.dot(vectorized_query).tolist()
     full_results = []
     for i, score in enumerate(ranking):
         if score != 0:
