@@ -4,7 +4,6 @@ from nltk.stem.porter import *
 from index_configuration import IndexConfiguration
 
 STEMMER = PorterStemmer()
-HYPHEN_RE = re.compile("-")
 PERIOD_RE = re.compile("(?<=[a-zA-Z])\.(?=[a-zA-Z])")
 
 
@@ -17,7 +16,7 @@ def stem(tokens: list) -> list:
 
 
 def normalize(s: str) -> str:
-    s = HYPHEN_RE.sub(' ', s)  # low-cost -> low cost
+    s = s.replace('-', ' ')  # low-cost -> low cost
     s = PERIOD_RE.sub('', s)  # U.S.A -> USA
     return s
 
@@ -50,4 +49,4 @@ if __name__ == '__main__':
              'cial intelligence approaches to Information Retrieval.  Relation of Information Retrieval to the World Wid' \
              'e Web.  Search engines. Servers and clients.  Browser and server side programming for Information Retrieval.'
 
-    print(process(string,config=IndexConfiguration(True, True, True)))
+    print(process(string, config=IndexConfiguration(True, True, True)))

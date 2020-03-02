@@ -1,7 +1,8 @@
 import csv
 import pickle
 import numpy as np
-from scipy.sparse import csc_matrix
+from scipy.sparse import csr_matrix
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 import dictionary
 import text_processing
@@ -85,42 +86,33 @@ class Index:
         return docid_tf_dict, df_dict
 
     @staticmethod
-    def _get_tf_idf_matrix(tf_matrix: csc_matrix, df_matrix: csc_matrix, n: int) -> csc_matrix:
+    def _get_tf_idf_matrix(tf_matrix: csr_matrix, df_matrix: csr_matrix, n: int) -> csr_matrix:
         """
         Calculate tf-idf
         :param tf_matrix: term frequency, dimension (d,v)
         :param df_matrix: document frequency, dimension (d,v)
         :param n: number of documents
-        :return: tf-idf in numpy.ndarray format, dimension (d,v)
+        :return: tf-idf in csr_matrix format, dimension (d,v)
         """
         df_matrix.data = np.log10(n / (df_matrix.data + 1))
         tf_matrix.data = np.log10(1 + tf_matrix.data)
         tmp = df_matrix.multiply(tf_matrix)
         return tmp
 
-    def _get_df_matrix(self) -> csc_matrix:
+    def _get_df_matrix(self) -> csr_matrix:
         """
         Calculate raw document frequency
-        :return: numpy.ndarray (d, v)
+        :return: csr_matrix (d, v)
         """
-        '''
-        vocabulary_size = len(self.df_dict.keys())
-
-        df_lst = list(self.df_dict.values())
-
-        tmp = [df_lst] * self.doc_count
-        tmp = np.asarray(tmp).reshape((self.doc_count, vocabulary_size))
-        '''
         df_lst = list(self.df_dict.values())
         tmp = [df_lst] * self.doc_count
-        tmp = csc_matrix(tmp)
-
+        tmp = csr_matrix(tmp)
         return tmp
 
-    def _get_tf_matrix(self) -> csc_matrix:
+    def _get_tf_matrix(self) -> csr_matrix:
         """
         Calculate raw term frequency
-        :return:  numpy.ndarray (d,v)
+        :return:  csr_matrix (d,v)
         """
 
         def _get_doc_idx(doc_id: str) -> int:
@@ -137,7 +129,7 @@ class Index:
             lst.append(col)
 
         tf_matrix = np.asarray(lst).transpose()
-        tf_matrix = csc_matrix(tf_matrix)
+        tf_matrix = csr_matrix(tf_matrix)
         return tf_matrix
 
     def get(self, term: str) -> list:
