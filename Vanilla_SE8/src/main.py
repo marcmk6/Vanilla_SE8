@@ -8,11 +8,11 @@ from PyQt5.QtGui import QIcon, QStandardItemModel, QStandardItem
 from PyQt5.QtCore import pyqtSlot
 
 from search_engine import SearchEngine
-from corpus import preprocess_course_corpus, preprocess_reuters_corpus
+from corpus import preprocess_course_corpus, preprocess_reuters_corpus, REUTERS_CORPUS_OUTPUT
 
 BOOLEAN_MODEL_BUTTON_TEXT = 'Boolean Model'
 VSM_MODEL_BUTTON_TEXT = 'VSM Model'
-tmp_corpus = '../corpus/reuters_corpus.csv'
+tmp_corpus = REUTERS_CORPUS_OUTPUT
 
 # Inspired from https://pythonspot.com/gui/
 # Modele 1 - User Interface
@@ -27,6 +27,7 @@ class MainWindow(QWidget):
         self.initUI()
 
     def setup_se(self):
+        preprocess_reuters_corpus() #TODO remove
         if not os.path.exists(tmp_corpus):
             preprocess_course_corpus()
             preprocess_reuters_corpus()

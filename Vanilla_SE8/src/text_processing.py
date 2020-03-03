@@ -4,7 +4,7 @@ from nltk.stem.porter import *
 from index_configuration import IndexConfiguration
 
 STEMMER = PorterStemmer()
-PERIOD_RE = re.compile("(?<=[a-zA-Z])\.(?=[a-zA-Z])")
+# PERIOD_RE = re.compile("(?<=[a-zA-Z])\.(?=[a-zA-Z])")
 
 
 def rm_stop_words(tokens: list) -> list:
@@ -17,7 +17,8 @@ def stem(tokens: list) -> list:
 
 def normalize(s: str) -> str:
     s = s.replace('-', ' ')  # low-cost -> low cost
-    s = PERIOD_RE.sub('', s)  # U.S.A -> USA
+    # s = PERIOD_RE.sub('', s)
+    s = s.replace('.', '')  # U.S.A -> USA
     return s
 
 

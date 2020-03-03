@@ -142,7 +142,7 @@ def query(index: Index, raw_query: str) -> _SearchResult:
     for idx, tkn in enumerate(postfix_expr_tokens):
         if _is_operand(tkn) and tkn not in index.terms and tkn != DUMMY_WORD:
             correction_candidates.append([idx, tkn, get_closest_term(word=tkn, terms=index.terms)])
-    correction_made = sorted(correction_candidates, key=lambda x: index.get_term_frequency(x[2]), reverse=True)[
+    correction_made = sorted(correction_candidates, key=lambda x: index.get_total_term_frequency(x[2]), reverse=True)[
                       :UNFOUND_TERM_LIMIT]
     for e in correction_made:
         idx = e[0]

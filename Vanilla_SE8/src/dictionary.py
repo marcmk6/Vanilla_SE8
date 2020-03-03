@@ -20,10 +20,12 @@ def build_vocabulary(corpus, config: IndexConfiguration) -> list:
                 processed_tokens = text_processing.process(string=e, config=config)
                 for term in processed_tokens:
                     terms.add(term)
+
+    terms = terms - {''}  # Remove empty term
     terms = sorted(list(terms))
     return terms
 
 
 if __name__ == "__main__":
-    corpus = '../course_corpus.csv'
+    corpus = '../course_corpus_full.csv'
     print(build_vocabulary(corpus, config=IndexConfiguration(True, True, True)))

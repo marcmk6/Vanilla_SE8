@@ -2,7 +2,9 @@ import csv
 import pickle
 import numpy as np
 from scipy.sparse import csr_matrix
-from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.pipeline import Pipeline
+from sklearn.feature_extraction.text import TfidfTransformer
 
 import dictionary
 import text_processing
@@ -24,25 +26,84 @@ class Index:
 
     def __init__(self, config=None, corpus_path=None):
 
-        self.config = config
-        self.terms = dictionary.build_vocabulary(corpus_path, self.config)
+        # TODO remove
+        self.new = True
 
-        docs = self._create_documents(corpus_path)
-        id_lst = []
-        for doc in docs:
-            id_lst.append(doc.doc_id)
-        tf, df = self._construct_index(self.terms, docs)
+        def new_method(config, corpus_path):
+            self.config = config
+            tmp = self.construct_inverted_index(corpus_path)
+            self.terms = tmp[2]
+            self.docid_tf_dict = tmp[0]
+            self.doc_ids = tmp[3]
+            self.doc_count = len(self.doc_ids)
+            self.tf_idf_matrix = tmp[1]
+            self.tf_over_corpus_dct = tmp[4]
+            self.secondary_index = self._build_secondary_index()
 
-        self.df_dict = df
-        self.docid_tf_dict = tf
-        self.doc_ids = id_lst
+        def old_method(config, corpus_path):
+            self.config = config
+            self.terms = dictionary.build_vocabulary(corpus_path, self.config)
+            docs = self._create_documents(corpus_path)
+            id_lst = []
+            for doc in docs:
+                id_lst.append(doc.doc_id)
+            tf, df = self._construct_index(self.terms, docs)
+            self.df_dict = df
+            self.docid_tf_dict = tf
+            self.doc_ids = id_lst
+            self.doc_count = len(self.doc_ids)
+            self.tf_idf_matrix = self._get_tf_idf_matrix(tf_matrix=self._get_tf_matrix(),
+                                                         df_matrix=self._get_df_matrix(),
+                                                         n=self.doc_count)
 
-        self.doc_count = len(self.doc_ids)
+        if self.new:
+            new_method(config, corpus_path)
+        else:
+            old_method(config, corpus_path)
 
-        self.tf_idf_matrix = self._get_tf_idf_matrix(tf_matrix=self._get_tf_matrix(), df_matrix=self._get_df_matrix(),
-                                                     n=self.doc_count)
+    def construct_inverted_index(self, corpus_path: str) -> (dict, csr_matrix, list, list, dict):
 
-        self.secondary_index = self._build_secondary_index()
+        # Read corpus
+        corpus = []
+        doc_id_list = []
+        with open(corpus_path, 'r') as f:
+            reader = csv.reader(f)
+            for row in reader:
+                doc_id = row[0]
+                title = row[1]
+                content = row[2]
+                doc_id_list.append(doc_id)
+                corpus.append(title + ' ' + content)
+
+        def preprocessor(s):
+            return ' '.join(text_processing.process(s, config=self.config))
+
+        pipe = Pipeline([('count', CountVectorizer(preprocessor=preprocessor)),
+                         ('tfidf', TfidfTransformer(use_idf=True, smooth_idf=True, sublinear_tf=True))]).fit(corpus)
+
+        terms = pipe['count'].get_feature_names()
+
+        # total term frequency over corpus
+        tf_over_corpus = [sum(e) for e in pipe['count'].transform(corpus).transpose().toarray().tolist()]
+        tf_over_corpus_dct = {}
+        for i in range(0, len(terms)):
+            tf_over_corpus_dct[terms[i]] = tf_over_corpus[i]
+
+        # tf-idf matrix
+        tfidf_matrix = pipe.transform(corpus)
+        tfidf_matrix_T_list = tfidf_matrix.transpose().toarray().tolist()
+
+        # inverted index
+        inverted_index = {}
+        for i, term in enumerate(terms):
+            postings = []
+            tfidf_v_lst = tfidf_matrix_T_list[i]
+            for tfidf_v, doc_id in zip(tfidf_v_lst, doc_id_list):
+                if tfidf_v > 0:
+                    postings.append(doc_id)
+            inverted_index[term] = postings
+
+        return inverted_index, tfidf_matrix, terms, doc_id_list, tf_over_corpus_dct
 
     @staticmethod
     def _create_documents(corpus_path):
@@ -134,7 +195,11 @@ class Index:
 
     def get(self, term: str) -> list:
         if term in self.docid_tf_dict.keys():
-            return list(self.docid_tf_dict[term].keys())
+            # FIXME
+            if not self.new:
+                return list(self.docid_tf_dict[term].keys())
+            else:
+                return list(self.docid_tf_dict[term])
         else:
             return []
 
@@ -183,17 +248,19 @@ class Index:
         for bigram in list(all_bigrams):
             matched_terms = []
             for term in self.terms:
-                # if re.search(bigram_2_regex(bigram), term) is not None:
-                #     matched_terms.append(term)
                 if bigram_term_matched(bigram=bigram, term=term):
                     matched_terms.append(term)
             secondary_index[bigram] = sorted(matched_terms)  # FIXME: sort or not?
 
         return secondary_index
 
-    def get_term_frequency(self, term: str) -> int:
-        dct = self.docid_tf_dict[term]
-        return sum(list(dct.values()))
+    def get_total_term_frequency(self, term: str) -> int:
+        # FIXME
+        if not self.new:
+            dct = self.docid_tf_dict[term]
+            return sum(list(dct.values()))
+        else:
+            return self.tf_over_corpus_dct[term]
 
 
 def bigrams_2_terms(index: Index, bigrams: set) -> set:

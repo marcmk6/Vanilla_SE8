@@ -40,8 +40,8 @@ def _vectorize_query(index: Index, raw_query: str) -> (np.ndarray, SpellingCorre
             unfound_terms_correction.append((term_not_found, correction))
 
         # Take top N most likely candidates
-        unfound_terms_correction = sorted(unfound_terms_correction, key=lambda x: index.get_term_frequency(x[1]),
-                                            reverse=True)[:UNFOUND_TERM_LIMIT]
+        unfound_terms_correction = sorted(unfound_terms_correction, key=lambda x: index.get_total_term_frequency(x[1]),
+                                          reverse=True)[:UNFOUND_TERM_LIMIT]
 
         for unfound_term, correction in unfound_terms_correction:
             spelling_correction_obj.mapping[unfound_term] = correction
