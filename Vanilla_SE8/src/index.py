@@ -27,7 +27,7 @@ class Index:
     def __init__(self, config=None, corpus_path=None):
 
         # TODO remove
-        self.new = True
+        self.new = False
 
         def new_method(config, corpus_path):
             self.config = config

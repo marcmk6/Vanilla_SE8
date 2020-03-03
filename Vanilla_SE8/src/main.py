@@ -8,11 +8,12 @@ from PyQt5.QtGui import QIcon, QStandardItemModel, QStandardItem
 from PyQt5.QtCore import pyqtSlot
 
 from search_engine import SearchEngine
-from corpus import preprocess_course_corpus, preprocess_reuters_corpus, REUTERS_CORPUS_OUTPUT
+from corpus import preprocess_course_corpus, preprocess_reuters_corpus, REUTERS_CORPUS_OUTPUT, COURSE_CORPUS_OUTPUT
 
 BOOLEAN_MODEL_BUTTON_TEXT = 'Boolean Model'
 VSM_MODEL_BUTTON_TEXT = 'VSM Model'
 tmp_corpus = REUTERS_CORPUS_OUTPUT
+
 
 # Inspired from https://pythonspot.com/gui/
 # Modele 1 - User Interface
@@ -27,16 +28,18 @@ class MainWindow(QWidget):
         self.initUI()
 
     def setup_se(self):
-        preprocess_reuters_corpus() #TODO remove
-        if not os.path.exists(tmp_corpus):
-            preprocess_course_corpus()
+        preprocess_reuters_corpus()  # TODO remove
+        if not os.path.exists(REUTERS_CORPUS_OUTPUT):
             preprocess_reuters_corpus()
-        self.search_engine = SearchEngine(corpus=tmp_corpus, model='vsm')  # FIXME
+        if not os.path.exists(COURSE_CORPUS_OUTPUT):
+            preprocess_course_corpus()
+
+        self.search_engine = SearchEngine(model='vsm')  # FIXME
         if not SearchEngine.check_index_integrity():
             self.__create_message_box('Please wait for the construction of index.\n'
                                       'This may take about 1 minute.\n'
                                       'Click OK to start.')
-            self.search_engine.build_index(corpus_path=tmp_corpus)
+            self.search_engine.build_index()
         else:
             self.search_engine.load_index()
 
@@ -232,9 +235,11 @@ class MainWindow(QWidget):
                 #     setup(html_file=CURRENT_DIR + '/../%s' % html_file)
                 # else:
                 #     raise Exception('Could not find '%s'' % html_file)
-                pass
+                self.search_engine.switch_corpus('course_corpus')
+                print('Switched to course_corpus')
             elif button.text() == 'Reuters':
-                pass
+                self.search_engine.switch_corpus('Reuters')
+                print('Switched to Reuters')
 
     def selectItem(self):
         selected_item_idx = self.queryResult.selectedIndexes()[0].row()

@@ -4,10 +4,11 @@ import re
 import os
 from index import _Document
 
-COURSE_HTML = '../UofO_Courses.html'
-COURSE_CORPUS_OUTPUT = '../course_corpus_full.csv'
+COURSE_HTML = '../corpus/UofO_Courses.html'
+COURSE_CORPUS_OUTPUT = '../corpus/course_corpus_full.csv'
 REUTERS_SOURCE_DIR = '../corpus/reuters21578/'
 REUTERS_CORPUS_OUTPUT = '../corpus/reuters_corpus.csv'
+
 
 class Corpus:
 
@@ -76,8 +77,7 @@ def preprocess_course_corpus():
 
 
 def preprocess_reuters_corpus():
-
-    target_files = [f for f in os.listdir(REUTERS_SOURCE_DIR) if f.endswith('3.sgm')]# FIXME
+    target_files = [f for f in os.listdir(REUTERS_SOURCE_DIR) if f.endswith('021.sgm')]  # FIXME
     target_files = sorted(target_files)
 
     # Extract information
@@ -106,3 +106,4 @@ def preprocess_reuters_corpus():
         writer = csv.writer(o)
         for doc_id, title, content, topics in zip(doc_ids, titles, contents, topics_lst):
             writer.writerow([doc_id, title, content, topics])
+

@@ -7,20 +7,53 @@ from index_configuration import IndexConfiguration
 from index import Index, _SearchResult
 import vsm_retrieval
 import boolean_retrieval
-from corpus import Corpus
+from corpus import Corpus, COURSE_CORPUS_OUTPUT, REUTERS_CORPUS_OUTPUT
 
 INDEX_DIR = '../index/'
 INDEX_FILE_EXTENSION = '.idx'
+CORPUS_DIR = '../corpus/'
+AVAILABLE_CORPUS = {'course_corpus': CORPUS_DIR + 'course_corpus_full.csv',
+                    'Reuters': CORPUS_DIR + 'reuters_corpus.csv'}
+CORPUS_ID = {'course_corpus': 0, 'Reuters': 1}
 
 
 class _SearchEngineConf:
 
-    def __init__(self, model: str, index_conf=None):
+    def __init__(self, model: str, index_conf=None, corpus='Reuters'):
         if index_conf is not None:
             self.current_index_conf = index_conf
         else:
             self.current_index_conf = IndexConfiguration(stop_words_removal=True, stemming=True, normalization=True)
+
         self.current_model = model
+        self.current_corpus = corpus
+
+    def switch_corpus(self, corpus=None) -> None:
+        assert (corpus in AVAILABLE_CORPUS.keys())
+        self.current_corpus = corpus
+
+    def switch_model(self, model=None) -> None:
+        if model is None:
+            current = self.current_model
+            if current == 'vsm':
+                self.current_model = 'boolean'
+            else:
+                self.current_model = 'vsm'
+        else:
+            assert (model in ['vsm', 'boolean'])
+            self.current_model = model
+
+    def switch_stop_words_removal(self) -> None:
+        current_state = self.current_index_conf.stop_words_removal
+        self.current_index_conf.stop_words_removal = not current_state
+
+    def switch_stemming(self) -> None:
+        current_state = self.current_index_conf.stemming
+        self.current_index_conf.stemming = not current_state
+
+    def switch_normalization(self) -> None:
+        current_state = self.current_index_conf.normalization
+        self.current_index_conf.normalization = not current_state
 
     def __str__(self):
         return 'Current model: %s, current index selected: %s' % (self.current_model, self.current_index_conf)
@@ -28,17 +61,17 @@ class _SearchEngineConf:
 
 class SearchEngine:
 
-    def __init__(self, corpus: str, model='vsm', index_conf=None):
-        self.index_confs = []
+    def __init__(self, model='vsm', index_conf=None):
         self.indexes = []
         self.current_se_conf = _SearchEngineConf(model=model, index_conf=index_conf)
-        self.corpus = Corpus(corpus_file=corpus)
+        self.corpus_lst = [Corpus(corpus_file=COURSE_CORPUS_OUTPUT), Corpus(corpus_file=REUTERS_CORPUS_OUTPUT)]
 
-    def build_index(self, corpus_path: str) -> None:
+    def build_index(self) -> None:
         """
-        Build and save index from corpus
+        Build, save and load index
         """
-        __build_index__(corpus_path)
+        for corpus, corpus_path in AVAILABLE_CORPUS.items():
+            __build_index__(corpus_path=corpus_path, corpus_id=CORPUS_ID[corpus])
         self.load_index()
 
     def load_index(self) -> None:
@@ -51,39 +84,36 @@ class SearchEngine:
         index_files = sorted(index_files, reverse=True)
         for index_file in index_files:
             self.indexes.append(Index.load(INDEX_DIR + index_file))
-        self.index_confs = [idx.config for idx in self.indexes]
 
     def _get_current_index(self):
-        idx_conf = self.current_se_conf.current_index_conf
-        i1 = int(idx_conf.stop_words_removal)
-        i2 = int(idx_conf.stemming)
-        i3 = int(idx_conf.normalization)
-        i = str(i1) + str(i2) + str(i3)
+        current_idx_conf = self.current_se_conf.current_index_conf
+        i0 = (lambda x: '0' if x == 'course_corpus' else '1')(self.current_se_conf.current_corpus)
+        i1 = int(current_idx_conf.stop_words_removal)
+        i2 = int(current_idx_conf.stemming)
+        i3 = int(current_idx_conf.normalization)
+        i = i0 + str(i1) + str(i2) + str(i3)
         tmp = int(i, base=2)
-        return self.indexes[7 - tmp]
+        return self.indexes[15 - tmp]
 
     def switch_stop_words_removal(self) -> None:
-        current_state = self.current_se_conf.current_index_conf.stop_words_removal
-        self.current_se_conf.current_index_conf.stop_words_removal = not current_state
+        """Switch stopwords removal"""
+        self.current_se_conf.switch_stop_words_removal()
 
     def switch_stemming(self) -> None:
-        current_state = self.current_se_conf.current_index_conf.stemming
-        self.current_se_conf.current_index_conf.stemming = not current_state
+        """Switch stemming"""
+        self.current_se_conf.switch_stemming()
 
     def switch_normalization(self) -> None:
-        current_state = self.current_se_conf.current_index_conf.normalization
-        self.current_se_conf.current_index_conf.normalization = not current_state
+        """Switch normalization"""
+        self.current_se_conf.switch_normalization()
 
     def switch_model(self, model=None) -> None:
-        if model is None:
-            current = self.current_se_conf.current_model
-            if current == 'vsm':
-                self.current_se_conf.current_model = 'boolean'
-            else:
-                self.current_se_conf.current_model = 'vsm'
-        else:
-            assert (model in ['vsm', 'boolean'])
-            self.current_se_conf.current_model = model
+        """Switch retrieval model"""
+        self.current_se_conf.switch_model(model=model)
+
+    def switch_corpus(self, corpus=None) -> None:
+        """Switch corpus"""
+        self.current_se_conf.switch_corpus(corpus=corpus)
 
     def query(self, query: str) -> _SearchResult:
         """
@@ -96,13 +126,19 @@ class SearchEngine:
             return boolean_retrieval.query(self._get_current_index(), query)
 
     def get_doc_content(self, doc_id: str):
-        return self.corpus.get_doc_content(doc_id)
+        current_corpus = self.corpus_lst[
+            (lambda x: 0 if x == 'course_corpus' else 1)(self.current_se_conf.current_corpus)]
+        return current_corpus.get_doc_content(doc_id)
 
     def get_doc_title(self, doc_id: str):
-        return self.corpus.get_doc_title(doc_id)
+        current_corpus = self.corpus_lst[
+            (lambda x: 0 if x == 'course_corpus' else 1)(self.current_se_conf.current_corpus)]
+        return current_corpus.get_doc_title(doc_id)
 
     def get_doc_excerpt(self, doc_id: str):
-        return self.corpus.get_doc_excerpt(doc_id)
+        current_corpus = self.corpus_lst[
+            (lambda x: 0 if x == 'course_corpus' else 1)(self.current_se_conf.current_corpus)]
+        return current_corpus.get_doc_excerpt(doc_id)
 
     def __str__(self):
         return _SearchEngineConf.__str__(self.current_se_conf)
@@ -112,18 +148,18 @@ class SearchEngine:
         if exists(INDEX_DIR):
             index_files = [f for f in listdir(INDEX_DIR) if
                            isfile(join(INDEX_DIR, f)) and f.endswith(INDEX_FILE_EXTENSION)]
-            return len(index_files) == 8
+            return len(index_files) == 16
         else:
             return False
 
 
-def __index_building_worker__(corpus_path, conf_obj, _conf_tuple):
+def __index_building_worker__(corpus_path, conf_obj, _conf_tuple, corpus_id):
     index = Index(corpus_path=corpus_path, config=conf_obj)
     index_id = ''.join([str(e) for e in list(_conf_tuple)])
-    index.save(INDEX_DIR + 'index_' + index_id + INDEX_FILE_EXTENSION)
+    index.save(INDEX_DIR + 'index_' + str(corpus_id) + index_id + INDEX_FILE_EXTENSION)
 
 
-def __build_index__(corpus_path):
+def __build_index__(corpus_path, corpus_id):
     if not exists(INDEX_DIR):
         makedirs(INDEX_DIR)
 
@@ -139,9 +175,10 @@ def __build_index__(corpus_path):
 
     pool = Pool(cpu_count())
     params_tuples = []
-    for i, j, k in zip([corpus_path] * len(index_confs), index_confs, _idx_conf_tuples):
-        params_tuples.append((i, j, k))
+    for i, j, k, l in zip([corpus_path] * len(index_confs), index_confs, _idx_conf_tuples,
+                          [corpus_id] * len(index_confs)):
+        params_tuples.append((i, j, k, l))
     start = time()
     with pool:
         pool.starmap(__index_building_worker__, params_tuples)
-    print('time spent: %s' % (time() - start))
+    print('corpus_id: %s, time spent: %s' % (corpus_id, time() - start))
