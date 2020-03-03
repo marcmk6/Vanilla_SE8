@@ -2,6 +2,7 @@ from os import listdir, makedirs, cpu_count
 from os.path import isfile, join, exists
 from multiprocessing import Pool
 from time import time
+import logging
 
 from index_configuration import IndexConfiguration
 from index import Index, _SearchResult
@@ -15,48 +16,6 @@ CORPUS_DIR = '../corpus/'
 AVAILABLE_CORPUS = {'course_corpus': CORPUS_DIR + 'course_corpus_full.csv',
                     'Reuters': CORPUS_DIR + 'reuters_corpus.csv'}
 CORPUS_ID = {'course_corpus': 0, 'Reuters': 1}
-
-
-class _SearchEngineConf:
-
-    def __init__(self, model: str, index_conf=None, corpus='Reuters'):
-        if index_conf is not None:
-            self.current_index_conf = index_conf
-        else:
-            self.current_index_conf = IndexConfiguration(stop_words_removal=True, stemming=True, normalization=True)
-
-        self.current_model = model
-        self.current_corpus = corpus
-
-    def switch_corpus(self, corpus=None) -> None:
-        assert (corpus in AVAILABLE_CORPUS.keys())
-        self.current_corpus = corpus
-
-    def switch_model(self, model=None) -> None:
-        if model is None:
-            current = self.current_model
-            if current == 'vsm':
-                self.current_model = 'boolean'
-            else:
-                self.current_model = 'vsm'
-        else:
-            assert (model in ['vsm', 'boolean'])
-            self.current_model = model
-
-    def switch_stop_words_removal(self) -> None:
-        current_state = self.current_index_conf.stop_words_removal
-        self.current_index_conf.stop_words_removal = not current_state
-
-    def switch_stemming(self) -> None:
-        current_state = self.current_index_conf.stemming
-        self.current_index_conf.stemming = not current_state
-
-    def switch_normalization(self) -> None:
-        current_state = self.current_index_conf.normalization
-        self.current_index_conf.normalization = not current_state
-
-    def __str__(self):
-        return 'Current model: %s, current index selected: %s' % (self.current_model, self.current_index_conf)
 
 
 class SearchEngine:
@@ -182,3 +141,45 @@ def __build_index__(corpus_path, corpus_id):
     with pool:
         pool.starmap(__index_building_worker__, params_tuples)
     print('corpus_id: %s, time spent: %s' % (corpus_id, time() - start))
+
+
+class _SearchEngineConf:
+
+    def __init__(self, model: str, index_conf=None, corpus='Reuters'):
+        if index_conf is not None:
+            self.current_index_conf = index_conf
+        else:
+            self.current_index_conf = IndexConfiguration(stop_words_removal=True, stemming=True, normalization=True)
+
+        self.current_model = model
+        self.current_corpus = corpus
+
+    def switch_corpus(self, corpus=None) -> None:
+        assert (corpus in AVAILABLE_CORPUS.keys())
+        self.current_corpus = corpus
+
+    def switch_model(self, model=None) -> None:
+        if model is None:
+            current = self.current_model
+            if current == 'vsm':
+                self.current_model = 'boolean'
+            else:
+                self.current_model = 'vsm'
+        else:
+            assert (model in ['vsm', 'boolean'])
+            self.current_model = model
+
+    def switch_stop_words_removal(self) -> None:
+        current_state = self.current_index_conf.stop_words_removal
+        self.current_index_conf.stop_words_removal = not current_state
+
+    def switch_stemming(self) -> None:
+        current_state = self.current_index_conf.stemming
+        self.current_index_conf.stemming = not current_state
+
+    def switch_normalization(self) -> None:
+        current_state = self.current_index_conf.normalization
+        self.current_index_conf.normalization = not current_state
+
+    def __str__(self):
+        return 'Current model: %s, current index selected: %s' % (self.current_model, self.current_index_conf)

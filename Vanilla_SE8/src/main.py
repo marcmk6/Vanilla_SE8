@@ -12,7 +12,6 @@ from corpus import preprocess_course_corpus, preprocess_reuters_corpus, REUTERS_
 
 BOOLEAN_MODEL_BUTTON_TEXT = 'Boolean Model'
 VSM_MODEL_BUTTON_TEXT = 'VSM Model'
-tmp_corpus = REUTERS_CORPUS_OUTPUT
 
 
 # Inspired from https://pythonspot.com/gui/

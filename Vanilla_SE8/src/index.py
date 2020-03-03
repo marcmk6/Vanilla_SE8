@@ -5,6 +5,7 @@ from scipy.sparse import csr_matrix
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import TfidfTransformer
+import logging
 
 import dictionary
 import text_processing
@@ -33,16 +34,20 @@ class Index:
             self.config = config
             tmp = self.construct_inverted_index(corpus_path)
             self.terms = tmp[2]
+            logging.info('%s, %s, terms size: %s' % (corpus_path, config, len(self.terms)))
             self.docid_tf_dict = tmp[0]
             self.doc_ids = tmp[3]
             self.doc_count = len(self.doc_ids)
+            logging.info('%s, %s, Start building tfidf' % (corpus_path, config))
             self.tf_idf_matrix = tmp[1]
+            logging.info('%s, %s, tfidf built' % (corpus_path, config))
             self.tf_over_corpus_dct = tmp[4]
             self.secondary_index = self._build_secondary_index()
 
         def old_method(config, corpus_path):
             self.config = config
             self.terms = dictionary.build_vocabulary(corpus_path, self.config)
+            logging.info('%s, %s, terms size: %s' % (corpus_path, config, len(self.terms)))
             docs = self._create_documents(corpus_path)
             id_lst = []
             for doc in docs:
@@ -52,9 +57,11 @@ class Index:
             self.docid_tf_dict = tf
             self.doc_ids = id_lst
             self.doc_count = len(self.doc_ids)
+            logging.info('%s, %s, Start building tfidf' % (corpus_path, config))
             self.tf_idf_matrix = self._get_tf_idf_matrix(tf_matrix=self._get_tf_matrix(),
                                                          df_matrix=self._get_df_matrix(),
                                                          n=self.doc_count)
+            logging.info('%s, %s, tfidf built' % (corpus_path, config))
 
         if self.new:
             new_method(config, corpus_path)
@@ -155,9 +162,9 @@ class Index:
         :param n: number of documents
         :return: tf-idf in csr_matrix format, dimension (d,v)
         """
-        df_matrix.data = np.log10(n / (df_matrix.data + 1))
-        tf_matrix.data = np.log10(1 + tf_matrix.data)
-        tmp = df_matrix.multiply(tf_matrix)
+        df_matrix.data = (np.log10(n / (df_matrix.data + 1))).astype(np.float16)
+        tf_matrix.data = (np.log10(1 + tf_matrix.data)).astype(np.float16)
+        tmp = (df_matrix.multiply(tf_matrix)).astype(np.float16)
         return tmp
 
     def _get_df_matrix(self) -> csr_matrix:
@@ -167,7 +174,8 @@ class Index:
         """
         df_lst = list(self.df_dict.values())
         tmp = [df_lst] * self.doc_count
-        tmp = csr_matrix(tmp)
+        # There are 21578 documents in Reuters corpus, int16 is therefore sufficient.
+        tmp = csr_matrix(tmp, dtype=np.int16)
         return tmp
 
     def _get_tf_matrix(self) -> csr_matrix:
@@ -189,7 +197,7 @@ class Index:
                 col[idx] = tf
             lst.append(col)
 
-        tf_matrix = np.asarray(lst).transpose()
+        tf_matrix = np.asarray(lst, dtype=np.int32).transpose()
         tf_matrix = csr_matrix(tf_matrix)
         return tf_matrix
 
