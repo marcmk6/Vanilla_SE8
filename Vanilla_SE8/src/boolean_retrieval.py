@@ -1,10 +1,10 @@
 import re
-import text_processing
-from index import Index, bigrams_2_terms, UNFOUND_TERM_LIMIT, _SearchResult
-import wildcard_handler
-from spelling_correction import SpellingCorrection, get_closest_term
 
-DUMMY_WORD = 'DUMMY_WORD'
+import text_processing
+from index import Index, UNFOUND_TERM_LIMIT, _SearchResult
+from wildcard_handler import get_bigrams
+from spelling_correction import SpellingCorrection, get_closest_term
+from global_variable import DUMMY_WORD
 
 
 def _is_operand(exp: str) -> bool:
@@ -125,7 +125,7 @@ def query(index: Index, raw_query: str) -> _SearchResult:
     for t in raw_query.split():
         if _is_operand(t):
             if _is_wildcard_query_operand(t):
-                bigrams = wildcard_handler.get_bigrams(t)
+                bigrams = get_bigrams(t)
                 unchecked_equivalences = bigrams_2_terms(index, bigrams)
                 t = equivalences_2_query(unchecked_equivalences, t)
             else:

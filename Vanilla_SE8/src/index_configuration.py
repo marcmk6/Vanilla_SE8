@@ -6,5 +6,15 @@ class IndexConfiguration:
         self.normalization = normalization
 
     def __str__(self):
-        return 'stop_words_removal: %s, stemming: %s, normalization: %s' % (
-        self.stop_words_removal, self.stemming, self.normalization)
+        return str(int(self.stop_words_removal)) + str(int(self.stemming)) + str(int(self.normalization))
+
+
+def __get_all_possible_index_configurations__():
+    lst = []
+    _range = [1, 0]
+    for swr in _range:
+        for s in _range:
+            for n in _range:
+                lst.append(
+                    IndexConfiguration(stop_words_removal=bool(swr), stemming=bool(s), normalization=bool(n)))
+    return lst

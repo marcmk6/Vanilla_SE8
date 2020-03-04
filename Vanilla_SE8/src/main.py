@@ -8,7 +8,8 @@ from PyQt5.QtGui import QIcon, QStandardItemModel, QStandardItem
 from PyQt5.QtCore import pyqtSlot
 
 from search_engine import SearchEngine
-from corpus import preprocess_course_corpus, preprocess_reuters_corpus, REUTERS_CORPUS_OUTPUT, COURSE_CORPUS_OUTPUT
+from global_variable import COURSE_CORPUS, REUTERS_CORPUS
+from corpus import preprocess_course_corpus, preprocess_reuters_corpus
 
 BOOLEAN_MODEL_BUTTON_TEXT = 'Boolean Model'
 VSM_MODEL_BUTTON_TEXT = 'VSM Model'
@@ -28,9 +29,9 @@ class MainWindow(QWidget):
 
     def setup_se(self):
         preprocess_reuters_corpus()  # TODO remove
-        if not os.path.exists(REUTERS_CORPUS_OUTPUT):
+        if not os.path.exists(REUTERS_CORPUS):
             preprocess_reuters_corpus()
-        if not os.path.exists(COURSE_CORPUS_OUTPUT):
+        if not os.path.exists(COURSE_CORPUS):
             preprocess_course_corpus()
 
         self.search_engine = SearchEngine(model='vsm')  # FIXME

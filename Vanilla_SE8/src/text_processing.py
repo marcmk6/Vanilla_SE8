@@ -1,9 +1,10 @@
-import re
 import nltk
 from nltk.stem.porter import *
 from index_configuration import IndexConfiguration
 
 STEMMER = PorterStemmer()
+
+
 # PERIOD_RE = re.compile("(?<=[a-zA-Z])\.(?=[a-zA-Z])")
 
 
@@ -17,7 +18,6 @@ def stem(tokens: list) -> list:
 
 def normalize(s: str) -> str:
     s = s.replace('-', ' ')  # low-cost -> low cost
-    # s = PERIOD_RE.sub('', s)
     s = s.replace('.', '')  # U.S.A -> USA
     return s
 
@@ -42,6 +42,27 @@ def process(string: str, config: IndexConfiguration) -> list:
     if len(tokens) == 0:
         return ['']
     return tokens
+
+
+def get_terms(content: str, config: IndexConfiguration) -> list:
+    stop_words_removal = config.stop_words_removal
+    stemming = config.stemming
+    normalization = config.normalization
+
+    tokens = set(nltk.word_tokenize(content))
+
+    if normalization:
+        tokens = {normalize(t) for t in tokens}
+
+    if stop_words_removal:
+        tokens = {t for t in tokens if t not in nltk.corpus.stopwords.words('english')}
+
+    if stemming:
+        tokens = {STEMMER.stem(t) for t in tokens}
+
+    tokens = tokens - {''}
+
+    return sorted(list(tokens))  # TODO not necessary
 
 
 if __name__ == '__main__':

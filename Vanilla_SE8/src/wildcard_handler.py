@@ -1,3 +1,6 @@
+import re
+
+
 def get_bigrams(word: str) -> set:
     chars = ['$'] + [char for char in word if char != '*'] + ['$']
     bigrams = []
@@ -33,4 +36,3 @@ def bigram_term_matched(bigram: str, term: str) -> bool:
         return term[-1] == bigram[-2]
     else:
         return bigram in term
-
