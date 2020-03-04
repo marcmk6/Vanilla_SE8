@@ -1,11 +1,12 @@
+import gc
 import csv
 import pickle
+import logging
 import numpy as np
 from scipy.sparse import csr_matrix
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import TfidfTransformer
-import logging
 
 from dictionary import build_vocabulary
 import text_processing
@@ -14,7 +15,6 @@ from spelling_correction import SpellingCorrection
 import global_variable
 
 logging.basicConfig(level=logging.INFO)
-UNFOUND_TERM_LIMIT = 3
 
 
 class Index:
@@ -56,6 +56,7 @@ class Index:
             self.tf_idf_matrix = self.__get_tf_idf_matrix__(tf_matrix=self.__get_tf_matrix__(),
                                                             df_matrix_row=self.__get_df_matrix_row__(),
                                                             doc_count=self.doc_count)
+            gc.collect()
             logging.info('%s, %s, tfidf built' % (corpus_path, config))
 
         if self.new:

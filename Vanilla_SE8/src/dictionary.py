@@ -15,7 +15,7 @@ def build_vocabulary(corpus_id: int, config: IndexConfiguration) -> (list, list)
 
     if exists(terms_path):
         terms = __load_terms__(terms_path)
-        docs = []
+        docs = []   # won't be used
     else:
         terms, docs = __build_vocabulary_v2__(corpus_path=corpus_path, config=config)
         __save_terms__(path=terms_path, terms=terms)

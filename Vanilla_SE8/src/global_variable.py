@@ -31,3 +31,6 @@ DOC_RETRIEVAL_LIMIT = 10
 
 """Boolean retrieval specific"""
 DUMMY_WORD = 'DUMMY_WORD'
+
+"""Spelling correction"""
+UNFOUND_TERM_LIMIT = 3

@@ -1,10 +1,10 @@
 import re
 
 import text_processing
-from index import Index, UNFOUND_TERM_LIMIT, _SearchResult
+from index import Index, _SearchResult
 from wildcard_handler import get_bigrams
 from spelling_correction import SpellingCorrection, get_closest_term
-from global_variable import DUMMY_WORD
+from global_variable import DUMMY_WORD, UNFOUND_TERM_LIMIT
 
 
 def _is_operand(exp: str) -> bool:
