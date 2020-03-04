@@ -3,6 +3,8 @@ from os.path import isfile, join, exists
 from multiprocessing import Pool
 from time import time
 import logging
+import gc
+from memory_profiler import profile
 
 from index_configuration import IndexConfiguration
 from index import Index, _SearchResult
@@ -102,8 +104,8 @@ class SearchEngine:
 
 
 def __index_building_worker__(corpus_path, conf_obj):
-    index = Index(corpus_path=corpus_path, config=conf_obj)
-    index.save()
+    Index(corpus_path=corpus_path, config=conf_obj).save()
+    gc.collect()
 
 
 def __build_index__(corpus_path):
@@ -120,7 +122,7 @@ def __build_index__(corpus_path):
     start = time()
     with pool:
         pool.starmap(__index_building_worker__, params_tuples)
-    print('time spent: %s' % (time() - start))
+    print('Total time building index %s: %s' % (time() - start, '0' if 'course' in corpus_path else '1'))
 
 
 class _SearchEngineConf:

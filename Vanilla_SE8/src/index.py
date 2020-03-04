@@ -7,6 +7,7 @@ from scipy.sparse import csr_matrix
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import TfidfTransformer
+from memory_profiler import profile
 
 from dictionary import build_vocabulary
 import text_processing
@@ -14,15 +15,34 @@ from wildcard_handler import get_bigrams, bigram_term_matched
 from spelling_correction import SpellingCorrection
 import global_variable
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
 
 
 class Index:
+    def old_method(self, corpus_path, config):
+        self.terms, docs = build_vocabulary(self.corpus_id, self.config)
+        logging.info('corpus_id: %s, %s, terms size: %s' % (self.corpus_id, config, len(self.terms)))
+
+        id_lst = []
+        for doc in docs:
+            id_lst.append(doc.doc_id)
+
+        tf, df = self.__construct_index__(self.terms, docs)
+        self.df_dict = df
+        self.docid_tf_dict = tf
+        self.doc_ids = id_lst
+        self.doc_count = len(self.doc_ids)
+        logging.info('%s, %s, Start building tfidf' % (corpus_path, config))
+        self.tf_idf_matrix = self.__get_tf_idf_matrix__(tf_matrix=self.__get_tf_matrix__(df_dict=df),
+                                                        df_matrix_row=self.__get_df_matrix_row__(df_dict=df),
+                                                        doc_count=self.doc_count)
+        gc.collect()
+        logging.info('%s, %s, tfidf built, size: %s' % (corpus_path, config, self.tf_idf_matrix.shape))
 
     def __init__(self, config=None, corpus_path=None):
         self.config = config
 
-        self.corpus_id = 1 if 'course' in corpus_path else 0
+        self.corpus_id = 0 if 'course' in corpus_path else 1
 
         # TODO remove
         self.new = False
@@ -39,30 +59,10 @@ class Index:
             logging.info('%s, %s, tfidf built' % (corpus_path, config))
             self.tf_over_corpus_dct = tmp[4]
 
-        def old_method(corpus_path):
-            self.terms, docs = build_vocabulary(self.corpus_id, self.config)
-            logging.info('corpus_id: %s, %s, terms size: %s' % (self.corpus_id, config, len(self.terms)))
-
-            id_lst = []
-            for doc in docs:
-                id_lst.append(doc.doc_id)
-
-            tf, df = self.__construct_index__(self.terms, docs)
-            self.df_dict = df
-            self.docid_tf_dict = tf
-            self.doc_ids = id_lst
-            self.doc_count = len(self.doc_ids)
-            logging.info('%s, %s, Start building tfidf' % (corpus_path, config))
-            self.tf_idf_matrix = self.__get_tf_idf_matrix__(tf_matrix=self.__get_tf_matrix__(),
-                                                            df_matrix_row=self.__get_df_matrix_row__(),
-                                                            doc_count=self.doc_count)
-            gc.collect()
-            logging.info('%s, %s, tfidf built' % (corpus_path, config))
-
         if self.new:
             new_method(corpus_path)
         else:
-            old_method(corpus_path)
+            self.old_method(corpus_path, config)
         self.secondary_index = self.__build_secondary_index__()
 
     def __construct_index__(self, terms, documents) -> (dict, dict):
@@ -89,7 +89,7 @@ class Index:
         return docid_tf_dict, df_dict
 
     @staticmethod
-    def __get_tf_idf_matrix__(tf_matrix: csr_matrix, df_matrix_row: np.ndarray, doc_count: int) -> csr_matrix:
+    def __get_tf_idf_matrix__(tf_matrix: np.ndarray, df_matrix_row: np.ndarray, doc_count: int) -> csr_matrix:
         """
         Calculate tf-idf
         :param tf_matrix: term frequency, dimension (d,v)
@@ -100,14 +100,18 @@ class Index:
         doc_count = tf_matrix.shape[0]
 
         df_matrix_row = (np.log10(doc_count / (df_matrix_row + 1))).astype(np.float16)
-        df_matrix = csr_matrix(np.tile(df_matrix_row, reps=[doc_count, 1]), dtype=np.float16)
 
-        tf_matrix.data = (np.log10(1 + tf_matrix.data)).astype(np.float16)
+        def mtply(tf_matrix_row):
+            return df_matrix_row * tf_matrix_row
 
-        tmp = (df_matrix.multiply(tf_matrix)).astype(np.float16)
+        # df_matrix = csr_matrix(np.tile(df_matrix_row, reps=[doc_count, 1]), dtype=np.float16)
+
+        tf_matrix = (np.log10(1 + tf_matrix)).astype(np.float16)
+
+        tmp = csr_matrix((np.apply_along_axis(mtply, 1, tf_matrix)).astype(np.float16))
         return tmp
 
-    def __get_df_matrix_row__(self) -> np.ndarray:
+    def __get_df_matrix_row__(self, df_dict) -> np.ndarray:
         """
         Raw document frequency, one row
         :return: csr_matrix (1, v)
@@ -118,7 +122,7 @@ class Index:
         tmp = np.asarray(tmp, dtype=np.int16)
         return tmp
 
-    def __get_tf_matrix__(self) -> csr_matrix:
+    def __get_tf_matrix__(self, df_dict) -> np.ndarray:
         """
         Calculate raw term frequency
         :return:  csr_matrix (d,v)
@@ -138,7 +142,8 @@ class Index:
             lst.append(col)
 
         tf_matrix = np.asarray(lst, dtype=np.int32).transpose()
-        tf_matrix = csr_matrix(tf_matrix)
+        gc.collect()
+        # tf_matrix = csr_matrix(tf_matrix)
         return tf_matrix
 
     def get(self, term: str) -> list:
@@ -152,7 +157,9 @@ class Index:
             return []
 
     def save(self) -> None:
+        logging.info('Start saving index %s' % (str(self)))
         self.__save_pickle__()
+        logging.info('Index %s saved.' % (str(self)))
 
     def __save_pickle__(self) -> None:
         """
