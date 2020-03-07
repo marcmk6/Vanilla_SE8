@@ -32,7 +32,9 @@ class Index_v2:
 
     def build(self):
         """Build and save index"""
+        ray.init(num_cpus=cpu_count())
         _index = __build_index__(corpus_path=self.__corpus__, index_conf=self.config)
+        ray.shutdown()
         self.tf_idf_matrix = _index[0]
         self.inverted_index = _index[1]
         self.terms = sorted(list(_index[2]))
@@ -201,14 +203,14 @@ class _SearchResult:
 
 
 if __name__ == '__main__':
-    ray.init(num_cpus=cpu_count())
-    corpus_path = COURSE_CORPUS
+    # ray.init(num_cpus=cpu_count())
+    corpus_path = REUTERS_CORPUS
     ic = IndexConfiguration(True, True, True)
     start = time()
     index = Index_v2(corpus=COURSE_CORPUS, index_conf=ic)
     index.build()
-    with open('../index/new_terms.txt', 'w')as f:
-        f.write(str(index.terms))
+    # with open('../index/new_terms.txt', 'w')as f:
+    #     f.write(str(index.terms))
     print('time:%s' % (time() - start))
 
     # idx = NewIndex.load('../index/0_111.idx')

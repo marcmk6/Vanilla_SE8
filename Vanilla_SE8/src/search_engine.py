@@ -1,7 +1,6 @@
-from os import listdir, makedirs, cpu_count
+from os import listdir, makedirs
 from os.path import isfile, join, exists
 from time import time
-import ray
 from memory_profiler import profile
 
 from index_configuration import IndexConfiguration
@@ -24,10 +23,8 @@ class SearchEngine:
         """
         Build, save and load index
         """
-        ray.init(num_cpus=cpu_count())
         for corpus, corpus_path in TMP_AVAILABLE_CORPUS.items():
             __build_index__(corpus_path=corpus_path)
-        ray.shutdown()
         self.load_index()
 
     def load_index(self) -> None:
