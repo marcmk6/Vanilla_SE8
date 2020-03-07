@@ -7,6 +7,7 @@ from time import time
 import ray
 import pickle
 from memory_profiler import profile
+import gc
 
 from index_configuration import IndexConfiguration
 from text_processing import process
@@ -32,7 +33,9 @@ class Index_v2:
 
     def build(self):
         """Build and save index"""
+        ray.init(num_cpus=cpu_count())
         _index = __build_index__(corpus_path=self.__corpus__, index_conf=self.config)
+        ray.shutdown()
         self.tf_idf_matrix = _index[0]
         self.inverted_index = _index[1]
         self.terms = sorted(list(_index[2]))
@@ -151,13 +154,12 @@ def __build_index__(corpus_path: str, index_conf: IndexConfiguration):
 
         doc_ids_chunks = __get_chunks__(doc_ids, cpu_count())
 
-        ray.init(num_cpus=cpu_count())
         _tf_idf_dict_id = ray.put(tf_idf_dict)
         _terms_id = ray.put(terms)
         results = ray.get(
             [__worker__.remote(_tf_idf_dict_id, _terms_id, doc_ids_chunks[i],
                                (len(doc_ids_chunks[i]), len(terms))) for i in range(len(doc_ids_chunks))])
-        ray.shutdown()
+        gc.collect()
 
         tf_idf_matrix = np.concatenate(results, axis=0)
 
@@ -208,7 +210,7 @@ class _SearchResult:
 if __name__ == '__main__':
     # ray.init(num_cpus=cpu_count())
     corpus_path = REUTERS_CORPUS
-    ic = IndexConfiguration(True, True, True)
+    ic = IndexConfiguration(False, True, False)
     start = time()
     index = Index_v2(corpus=corpus_path, index_conf=ic)
     index.build()

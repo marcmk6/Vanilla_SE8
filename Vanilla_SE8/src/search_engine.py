@@ -152,3 +152,8 @@ class _SearchEngineConf:
 
     def __str__(self):
         return 'Current model: %s, current index selected: %s' % (self.current_model, self.current_index_conf)
+
+
+if __name__ == '__main__':
+    se = SearchEngine(model='vsm')
+    se.build_index()
