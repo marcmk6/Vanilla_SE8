@@ -128,9 +128,6 @@ def __build_index__(corpus_path: str, index_conf: IndexConfiguration):
                                 for term, tf in v.items()}
                        for doc_id, v in raw_tf.items()}
 
-        doc_ids = sorted(raw_tf.keys())
-        terms = sorted(raw_df.keys())
-
         def __get_chunks__(lst, n):
             chunk_size = floor(len(lst) / n)
             r = []
@@ -142,10 +139,7 @@ def __build_index__(corpus_path: str, index_conf: IndexConfiguration):
             return r
 
         @ray.remote
-        def __worker__(shared_objects, doc_ids_chunk, shape):
-            _tf_idf_dict = shared_objects[0]
-            _terms = shared_objects[1]
-            _raw_tf = shared_objects[2]
+        def __worker__(_tf_idf_dict, _terms, _raw_tf, doc_ids_chunk, shape):
 
             tf_idf_matrix_piece = np.zeros((shape[0], shape[1]), dtype=np.float16)
 
@@ -156,6 +150,9 @@ def __build_index__(corpus_path: str, index_conf: IndexConfiguration):
                     tf_idf_matrix_piece[row, col] = _tf_idf_dict[doc_id][term]
             return tf_idf_matrix_piece
 
+        doc_ids = sorted(raw_tf.keys())
+        terms = sorted(raw_df.keys())
+
         doc_ids_chunks = __get_chunks__(doc_ids, cpu_count())
 
         _tf_idf_dict_id = ray.put(tf_idf_dict)
@@ -165,7 +162,7 @@ def __build_index__(corpus_path: str, index_conf: IndexConfiguration):
         results = ray.get(
             [
                 __worker__.remote(
-                    shared_objects=(_tf_idf_dict_id, _terms_id, _raw_tf_id),
+                    _tf_idf_dict=_tf_idf_dict_id, _terms=_terms_id, _raw_tf=_raw_tf_id,
                     doc_ids_chunk=doc_ids_chunks[i],
                     shape=(len(doc_ids_chunks[i]), len(terms))
                 )
@@ -221,8 +218,8 @@ class _SearchResult:
 
 if __name__ == '__main__':
     # ray.init(num_cpus=cpu_count())
-    corpus_path = REUTERS_CORPUS
-    ic = IndexConfiguration(False, True, False)
+    corpus_path = COURSE_CORPUS
+    ic = IndexConfiguration(True, True, True)
     start = time()
     index = Index_v2(corpus=corpus_path, index_conf=ic)
     index.build()
