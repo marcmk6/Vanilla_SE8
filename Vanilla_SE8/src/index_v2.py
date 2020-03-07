@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from math import log10
+from math import log10, floor
 from scipy.sparse import csr_matrix
 from os import cpu_count
 from time import time
@@ -130,10 +130,13 @@ def __build_index__(corpus_path: str, index_conf: IndexConfiguration):
         terms = sorted(raw_df.keys())
 
         def __get_chunks__(lst, n):
-            chunk_size = round(len(lst) / n)
+            chunk_size = floor(len(lst) / n)
             r = []
-            for i in range(0, len(lst), chunk_size):
-                r.append(lst[i:i + chunk_size])
+            ptr = 0
+            for i in range(0, n - 1):
+                r.append(lst[ptr:ptr + chunk_size])
+                ptr += chunk_size
+            r.append(lst[ptr:])
             return r
 
         @ray.remote

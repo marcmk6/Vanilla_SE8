@@ -105,17 +105,13 @@ class SearchEngine:
             return False
 
 
-def __index_building_worker__(corpus_path, conf_obj):
-    Index_v2(corpus=corpus_path, index_conf=conf_obj).build()
-
-
 def __build_index__(corpus_path):
     if not exists(INDEX_DIR):
         makedirs(INDEX_DIR)
 
     start = time()
     for ic in ALL_POSSIBLE_INDEX_CONFIGURATIONS:
-        __index_building_worker__(corpus_path=corpus_path, conf_obj=ic)
+        Index_v2(corpus=corpus_path, index_conf=ic).build()
     print('Total time building index %s: %s' % (time() - start, '0' if 'course' in corpus_path else '1'))
 
 
