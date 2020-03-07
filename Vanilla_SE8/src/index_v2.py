@@ -7,7 +7,6 @@ from time import time
 import ray
 import pickle
 from memory_profiler import profile
-import gc
 
 from index_configuration import IndexConfiguration
 from text_processing import process
@@ -143,23 +142,36 @@ def __build_index__(corpus_path: str, index_conf: IndexConfiguration):
             return r
 
         @ray.remote
-        def __worker__(shared_tf_idf_dict, shared_terms, doc_ids_chunk, shape):
+        def __worker__(shared_objects, doc_ids_chunk, shape):
+            _tf_idf_dict = shared_objects[0]
+            _terms = shared_objects[1]
+            _raw_tf = shared_objects[2]
+
             tf_idf_matrix_piece = np.zeros((shape[0], shape[1]), dtype=np.float16)
+
             for row, doc_id in enumerate(doc_ids_chunk):
-                terms_in_doc = raw_tf[doc_id].keys()
+                terms_in_doc = _raw_tf[doc_id].keys()
                 for term in terms_in_doc:
-                    col = shared_terms.index(term)
-                    tf_idf_matrix_piece[row, col] = shared_tf_idf_dict[doc_id][term]
+                    col = _terms.index(term)
+                    tf_idf_matrix_piece[row, col] = _tf_idf_dict[doc_id][term]
             return tf_idf_matrix_piece
 
         doc_ids_chunks = __get_chunks__(doc_ids, cpu_count())
 
         _tf_idf_dict_id = ray.put(tf_idf_dict)
         _terms_id = ray.put(terms)
+        _raw_tf_id = ray.put(raw_tf)
+
         results = ray.get(
-            [__worker__.remote(_tf_idf_dict_id, _terms_id, doc_ids_chunks[i],
-                               (len(doc_ids_chunks[i]), len(terms))) for i in range(len(doc_ids_chunks))])
-        gc.collect()
+            [
+                __worker__.remote(
+                    shared_objects=(_tf_idf_dict_id, _terms_id, _raw_tf_id),
+                    doc_ids_chunk=doc_ids_chunks[i],
+                    shape=(len(doc_ids_chunks[i]), len(terms))
+                )
+                for i in range(len(doc_ids_chunks))
+            ]
+        )
 
         tf_idf_matrix = np.concatenate(results, axis=0)
 
