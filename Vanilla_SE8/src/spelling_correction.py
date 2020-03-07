@@ -55,7 +55,7 @@ class CharacterSubstitution(CharacterSubstitutionInterface):
 WEIGHTED_LEVENSHTEIN = WeightedLevenshtein(CharacterSubstitution())
 
 
-# TODO: multiprocessing to speed up?
+# TODO: speed up?
 def get_closest_term(word: str, terms: list) -> str:
     scores = []
     for i, term in enumerate(terms):

@@ -9,8 +9,9 @@ from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import TfidfTransformer
 from memory_profiler import profile
 
-from dictionary import build_vocabulary
+from dictionary_DEPRECATED import build_vocabulary
 import text_processing
+from index_configuration import IndexConfiguration
 from wildcard_handler import get_bigrams, bigram_term_matched
 from spelling_correction import SpellingCorrection
 import global_variable
@@ -189,6 +190,7 @@ class Index:
         return '%s_%s' % (str(self.corpus_id), str(self.config))
 
     def __build_secondary_index__(self):
+        # INPLEMENTED
         """Build bigram index"""
 
         secondary_index = {}
@@ -210,6 +212,7 @@ class Index:
 
     def get_total_term_frequency(self, term: str) -> int:
         # FIXME remove
+        # IMPLEMENTED
         if not self.new:
             dct = self.docid_tf_dict[term]
             return sum(list(dct.values()))
@@ -262,6 +265,7 @@ class Index:
 
 
 def bigrams_2_terms(index: Index, bigrams: set) -> set:
+    # IMPLEMENTED
     terms = []
     for bigram in bigrams:
         terms.append(set(index.secondary_index[bigram]))
@@ -275,3 +279,11 @@ class _SearchResult:
         self.doc_id_lst = doc_id_lst
         self.correction = correction
         self.result_scores = result_scores
+
+
+if __name__ == '__main__':
+    index = Index(corpus_path='../corpus/course_corpus.csv', config=IndexConfiguration(True, True, True))
+    with open('../index/tmp.txt', 'w') as f:
+        f.write(str(index.terms))
+
+    pass

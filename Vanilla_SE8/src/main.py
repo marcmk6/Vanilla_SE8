@@ -28,7 +28,7 @@ class MainWindow(QWidget):
         self.initUI()
 
     def setup_se(self):
-        preprocess_reuters_corpus()  # TODO remove
+        # preprocess_reuters_corpus()  # TODO remove
         if not os.path.exists(REUTERS_CORPUS):
             preprocess_reuters_corpus()
         if not os.path.exists(COURSE_CORPUS):

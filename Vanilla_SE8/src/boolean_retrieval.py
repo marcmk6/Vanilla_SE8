@@ -1,7 +1,7 @@
 import re
 
 import text_processing
-from index import Index, _SearchResult
+from index_v2 import Index_v2, _SearchResult, bigrams_2_terms
 from wildcard_handler import get_bigrams
 from spelling_correction import SpellingCorrection, get_closest_term
 from global_variable import DUMMY_WORD, UNFOUND_TERM_LIMIT
@@ -108,6 +108,7 @@ def perform_bool_operation(operator: str, operand_1: list, operand_2: list) -> l
     return r
 
 
+# FIXME problem?
 def equivalences_2_query(equivalent_words: set, original_wildcard_query: str) -> str:
     regex = original_wildcard_query.replace('*', '[a-zA-Z]*')
     t = set()
@@ -117,7 +118,7 @@ def equivalences_2_query(equivalent_words: set, original_wildcard_query: str) ->
     return '( ' + ' OR '.join(t) + ' )'
 
 
-def query(index: Index, raw_query: str) -> _SearchResult:
+def query(index: Index_v2, raw_query: str) -> _SearchResult:
     raw_query = raw_query.replace('(', '( ')
     raw_query = raw_query.replace(')', ' )')
 

@@ -16,7 +16,7 @@ def run_test():
                                 'child psychology',
                                 'bayesian network classification']
 
-    se = SearchEngine(corpus='../course_corpus_full.csv', model='boolean')
+    se = SearchEngine(model='boolean')
     se.load_index()
     for q in boolean_retrieval_test_query:
         r = se.query(q)
@@ -37,20 +37,4 @@ def run_test():
 
 
 if __name__ == '__main__':
-    corpus_path = '../course_corpus_full.csv'
-
-    # se = SearchEngine(model='vsm')
-    # # se.build_index(corpus_path)
-    # se.load_index()
-    # a, b = se.query('computr algorithm desgin')
-    # print(a)
-    # print(b)
-    #
-    # se.switch_model('boolean')
-    # print(se)
-    #
-    # a, b = se.query('algothrhm')
-    # print(a)
-    # print(b)
-    # pass
     run_test()

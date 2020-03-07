@@ -41,7 +41,9 @@ def preprocess_course_corpus():
             files = f.read().split(end)
         return files
 
-    def _preprocess_course_corpus(src_file):
+    files = _separate_files(RAW_COURSE_HTML)
+    n = 1
+    for src_file in files:
         soup = BeautifulSoup(src_file, 'lxml')
 
         course_name = []
@@ -57,8 +59,10 @@ def preprocess_course_corpus():
                 if 1 <= int(name[5]) <= 3:  # english course
                     course_name.append(name)
 
-                    # docid = name[:8]
+                    # doc_id = 'course_' + str(n)
                     doc_id = re.sub(' ', '_', name[:8])
+                    n += 1
+
                     doc_id_lst.append(doc_id)
 
                     if course_description is not None:
@@ -70,10 +74,6 @@ def preprocess_course_corpus():
             writer = csv.writer(o)
             for doc_id, name, course_description in zip(doc_id_lst, course_name, course_description_lst):
                 writer.writerow([doc_id, name, course_description])
-
-    files = _separate_files(RAW_COURSE_HTML)
-    for file in files:
-        _preprocess_course_corpus(file)
 
 
 def preprocess_reuters_corpus():
@@ -110,4 +110,4 @@ def preprocess_reuters_corpus():
 
 if __name__ == '__main__':
     preprocess_course_corpus()
-    preprocess_reuters_corpus()
+    # preprocess_reuters_corpus()

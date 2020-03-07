@@ -1,12 +1,12 @@
 import numpy as np
 
 import text_processing
-from index import Index, _SearchResult
 from spelling_correction import SpellingCorrection, get_closest_term
 from global_variable import DOC_RETRIEVAL_LIMIT, UNFOUND_TERM_LIMIT
+from index_v2 import Index_v2, _SearchResult
 
 
-def _vectorize_query(index: Index, raw_query: str) -> (np.ndarray, SpellingCorrection):
+def _vectorize_query(index: Index_v2, raw_query: str) -> (np.ndarray, SpellingCorrection):
     """
     Vectorize query
     If there is any unfound term, perform spelling correction
@@ -51,7 +51,7 @@ def _vectorize_query(index: Index, raw_query: str) -> (np.ndarray, SpellingCorre
     return np.asarray(vectorized_query), spelling_correction_obj
 
 
-def query(index: Index, query: str) -> _SearchResult:
+def query(index: Index_v2, query: str) -> _SearchResult:
     vectorized_query, spelling_correction_obj = _vectorize_query(index, query)
     ranking = index.tf_idf_matrix.dot(vectorized_query).tolist()
     full_results = []

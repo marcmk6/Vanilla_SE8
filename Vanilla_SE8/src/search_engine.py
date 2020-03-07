@@ -1,18 +1,16 @@
 from os import listdir, makedirs, cpu_count
 from os.path import isfile, join, exists
-from multiprocessing import Pool
 from time import time
-import logging
-import gc
+import ray
 from memory_profiler import profile
 
 from index_configuration import IndexConfiguration
-from index import Index, _SearchResult
 import vsm_retrieval
 import boolean_retrieval
 from corpus import Corpus
 from global_variable import INDEX_DIR, INDEX_FILE_EXTENSION, ALL_POSSIBLE_INDEX_CONFIGURATIONS, TMP_AVAILABLE_CORPUS, \
     VSM_MODEL, BOOLEAN_MODEL, QUERY_MODELS, COURSE_CORPUS, REUTERS_CORPUS
+from index_v2 import Index_v2, _SearchResult
 
 
 class SearchEngine:
@@ -26,8 +24,10 @@ class SearchEngine:
         """
         Build, save and load index
         """
+        ray.init(num_cpus=cpu_count())
         for corpus, corpus_path in TMP_AVAILABLE_CORPUS.items():
             __build_index__(corpus_path=corpus_path)
+        ray.shutdown()
         self.load_index()
 
     def load_index(self) -> None:
@@ -39,7 +39,9 @@ class SearchEngine:
         index_files = [f for f in listdir(INDEX_DIR) if isfile(join(INDEX_DIR, f)) and f.endswith(INDEX_FILE_EXTENSION)]
         index_files = sorted(index_files, reverse=True)
         for index_file in index_files:
-            self.indexes.append(Index.load(INDEX_DIR + index_file))
+            self.indexes.append(Index_v2.load(INDEX_DIR + index_file))
+
+        pass
 
     def _get_current_index(self):
         tmp = int(str(self.current_se_conf.current_index_conf).replace('_', ''), base=2)
@@ -104,24 +106,16 @@ class SearchEngine:
 
 
 def __index_building_worker__(corpus_path, conf_obj):
-    Index(corpus_path=corpus_path, config=conf_obj).save()
-    gc.collect()
+    Index_v2(corpus=corpus_path, index_conf=conf_obj).build()
 
 
 def __build_index__(corpus_path):
     if not exists(INDEX_DIR):
         makedirs(INDEX_DIR)
 
-    index_confs = ALL_POSSIBLE_INDEX_CONFIGURATIONS
-
-    pool = Pool(cpu_count())
-    params_tuples = []
-    for i, j in zip([corpus_path] * len(index_confs), index_confs):
-        params_tuples.append((i, j))
-
     start = time()
-    with pool:
-        pool.starmap(__index_building_worker__, params_tuples)
+    for ic in ALL_POSSIBLE_INDEX_CONFIGURATIONS:
+        __index_building_worker__(corpus_path=corpus_path, conf_obj=ic)
     print('Total time building index %s: %s' % (time() - start, '0' if 'course' in corpus_path else '1'))
 
 

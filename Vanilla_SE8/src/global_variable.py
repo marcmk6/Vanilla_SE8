@@ -8,7 +8,7 @@ TERMS_DIR = INDEX_DIR
 """Corpus"""
 RAW_COURSE_HTML = CORPUS_DIR + 'UofO_Courses.html'
 RAW_RETUERS_DIR = CORPUS_DIR + 'reuters21578/'
-COURSE_CORPUS = CORPUS_DIR + 'course_corpus_full.csv'
+COURSE_CORPUS = CORPUS_DIR + 'course_corpus.csv'
 REUTERS_CORPUS = CORPUS_DIR + 'reuters_corpus.csv'
 TMP_AVAILABLE_CORPUS = {'course_corpus': COURSE_CORPUS, 'Reuters': REUTERS_CORPUS}
 
