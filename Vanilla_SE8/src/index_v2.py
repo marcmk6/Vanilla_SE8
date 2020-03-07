@@ -185,7 +185,6 @@ def __build_index__(corpus_path: str, index_conf: IndexConfiguration):
     inverted_index = __sort_inverted_index_posting_lists__()
 
     tf_idf_matrix_csr = __get_tf_idf_matrix__()
-    ray.shutdown()
 
     return tf_idf_matrix_csr, inverted_index, all_terms, sorted(raw_tf.keys()), tf_over_corpus, bigram_index
 
