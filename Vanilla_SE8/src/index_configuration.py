@@ -11,7 +11,7 @@ class IndexConfiguration:
 
 def __get_all_possible_index_configurations__():
     lst = []
-    _range = [1, 0]
+    _range = [0, 1]
     for swr in _range:
         for s in _range:
             for n in _range:

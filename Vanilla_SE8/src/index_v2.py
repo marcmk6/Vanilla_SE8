@@ -32,9 +32,7 @@ class Index_v2:
 
     def build(self):
         """Build and save index"""
-        ray.init(num_cpus=cpu_count())
         _index = __build_index__(corpus_path=self.__corpus__, index_conf=self.config)
-        ray.shutdown()
         self.tf_idf_matrix = _index[0]
         self.inverted_index = _index[1]
         self.terms = sorted(list(_index[2]))
@@ -142,21 +140,25 @@ def __build_index__(corpus_path: str, index_conf: IndexConfiguration):
             return r
 
         @ray.remote
-        def __tf_idf_cal_worker__(shared_tf_idf_dict, doc_ids_chunk, shape):
+        def __worker__(shared_tf_idf_dict, shared_terms, doc_ids_chunk, shape):
             tf_idf_matrix_piece = np.zeros((shape[0], shape[1]), dtype=np.float16)
             for row, doc_id in enumerate(doc_ids_chunk):
                 terms_in_doc = raw_tf[doc_id].keys()
                 for term in terms_in_doc:
-                    col = terms.index(term)
+                    col = shared_terms.index(term)
                     tf_idf_matrix_piece[row, col] = shared_tf_idf_dict[doc_id][term]
             return tf_idf_matrix_piece
 
         doc_ids_chunks = __get_chunks__(doc_ids, cpu_count())
 
-        tf_idf_dict_id = ray.put(tf_idf_dict)
+        ray.init(num_cpus=cpu_count())
+        _tf_idf_dict_id = ray.put(tf_idf_dict)
+        _terms_id = ray.put(terms)
         results = ray.get(
-            [__tf_idf_cal_worker__.remote(tf_idf_dict_id, doc_ids_chunks[i], (len(doc_ids_chunks[i]), len(terms)))
-             for i in range(len(doc_ids_chunks))])
+            [__worker__.remote(_tf_idf_dict_id, _terms_id, doc_ids_chunks[i],
+                               (len(doc_ids_chunks[i]), len(terms))) for i in range(len(doc_ids_chunks))])
+        ray.shutdown()
+
         tf_idf_matrix = np.concatenate(results, axis=0)
 
         return csr_matrix(tf_idf_matrix)
@@ -181,7 +183,9 @@ def __build_index__(corpus_path: str, index_conf: IndexConfiguration):
     corpus_df.apply(
         lambda row: __process_row__(doc_id=row['doc_id'], string=row['to_be_processed'], index_conf=index_conf), axis=1)
     inverted_index = __sort_inverted_index_posting_lists__()
+
     tf_idf_matrix_csr = __get_tf_idf_matrix__()
+    ray.shutdown()
 
     return tf_idf_matrix_csr, inverted_index, all_terms, sorted(raw_tf.keys()), tf_over_corpus, bigram_index
 
@@ -207,7 +211,7 @@ if __name__ == '__main__':
     corpus_path = REUTERS_CORPUS
     ic = IndexConfiguration(True, True, True)
     start = time()
-    index = Index_v2(corpus=COURSE_CORPUS, index_conf=ic)
+    index = Index_v2(corpus=corpus_path, index_conf=ic)
     index.build()
     # with open('../index/new_terms.txt', 'w')as f:
     #     f.write(str(index.terms))
