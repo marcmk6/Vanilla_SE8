@@ -14,7 +14,7 @@ TMP_AVAILABLE_CORPUS = {'course_corpus': COURSE_CORPUS, 'Reuters': REUTERS_CORPU
 """File extension"""
 INDEX_FILE_EXTENSION = '.idx'
 CORPUS_FILE_EXTENSION = '.csv'
-BIGRAM_LANGUAGE_MODEL_EXTENSION = '.blm'
+QUERY_COMPLETION_FILE_EXTENSION = '.qc'
 
 """Index configuration"""
 ALL_POSSIBLE_INDEX_CONFIGURATIONS = __get_all_possible_index_configurations__()

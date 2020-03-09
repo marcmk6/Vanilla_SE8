@@ -6,3 +6,6 @@ https://nachtimwald.com/2009/07/04/qcompleter-and-comma-separated-tags/
 
 https://stackoverflow.com/questions/46229897/pyqt5-converting-signal-code-from-pyqt4
 
+https://stackoverflow.com/questions/15600014/pyqt-disconnect-slots-new-style
+
+https://stackoverflow.com/questions/8651742/dynamically-adding-and-removing-widgets-in-pyqt

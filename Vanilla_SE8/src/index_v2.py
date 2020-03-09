@@ -9,8 +9,9 @@ import ray
 import pickle
 
 from intermediate_class.index_configuration import IndexConfiguration
+from intermediate_class.query_completion import QueryCompletion
 from util.text_processing import process
-from global_variable import COURSE_CORPUS, INDEX_DIR, INDEX_FILE_EXTENSION, BIGRAM_LANGUAGE_MODEL_EXTENSION, \
+from global_variable import COURSE_CORPUS, INDEX_DIR, INDEX_FILE_EXTENSION, QUERY_COMPLETION_FILE_EXTENSION, \
     BLM_THRESHOLD, REUTERS_CORPUS
 from util.wildcard_handler import get_bigrams
 
@@ -191,7 +192,7 @@ def __build_index__(corpus_path: str, index_conf: IndexConfiguration):
     the model here is in the form of {term1: [other terms]}, other terms are sorted by frequency decreasingly
     'other terms' are refer to those that have frequency more than the threshold
     """
-    _blm_path = INDEX_DIR + ('0' if corpus_path == COURSE_CORPUS else '1') + BIGRAM_LANGUAGE_MODEL_EXTENSION
+    _blm_path = INDEX_DIR + ('0' if corpus_path == COURSE_CORPUS else '1') + QUERY_COMPLETION_FILE_EXTENSION
     if not exists(_blm_path):
         __build_bigram_language_model__(blm_out_path=_blm_path, corpus_df=corpus_df)
 
@@ -235,10 +236,11 @@ def __build_bigram_language_model__(blm_out_path, corpus_df) -> None:
             bigram_model[term1] = {term2: 1}
 
     def finalize_bigram_model():
+        all_terms = list(bigram_model.keys())
         tmp = {term1: sorted([(term2, count) for term2, count in v.items() if count >= BLM_THRESHOLD], reverse=True,
                              key=lambda x: x[1]) for term1, v in bigram_model.items()}
         tmp = {term1: [tpl[0] for tpl in v] for term1, v in tmp.items() if v != []}
-        return tmp
+        return tmp, all_terms
 
     def process_row(row_str):
         sentence_tokens_list = [
@@ -254,11 +256,11 @@ def __build_bigram_language_model__(blm_out_path, corpus_df) -> None:
     corpus_df['blm'] = corpus_df['title'] + '.' + corpus_df['content']
     corpus_df['blm'].apply(lambda row: process_row(row))
     corpus_df.drop(columns='blm', inplace=True)
-    bigram_model = finalize_bigram_model()
+    bigram_model, all_terms = finalize_bigram_model()
+    query_completion = QueryCompletion(bigram_model=bigram_model, all_terms=all_terms)
 
-    with open(blm_out_path, 'w') as f:
-        # pickle.dump(bigram_model, f)
-        f.write(str(bigram_model))
+    with open(blm_out_path, 'wb') as f:
+        pickle.dump(query_completion, f)
 
 
 if __name__ == '__main__':
