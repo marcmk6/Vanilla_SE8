@@ -1,6 +1,7 @@
-from os import listdir, makedirs
+from os import listdir, makedirs, cpu_count
 from os.path import isfile, join, exists
 from time import time
+import ray
 
 from intermediate_class.index_configuration import IndexConfiguration
 from retrieval_model import boolean_retrieval, vsm_retrieval
@@ -109,8 +110,10 @@ def __build_index__(corpus_path):
         makedirs(INDEX_DIR)
 
     start = time()
+    ray.init(num_cpus=cpu_count())
     for ic in ALL_POSSIBLE_INDEX_CONFIGURATIONS:
         Index_v2(corpus=corpus_path, index_conf=ic).build()
+    ray.shutdown()
     print('Total time building index %s: %s' % (time() - start, '0' if 'course' in corpus_path else '1'))
 
 

@@ -32,9 +32,9 @@ class Index_v2:
 
     def build(self):
         """Build and save index"""
-        ray.init(num_cpus=cpu_count())
+        # ray.init(num_cpus=cpu_count())
         _index = __build_index__(corpus_path=self.__corpus__, index_conf=self.config)
-        ray.shutdown()
+        # ray.shutdown()
         self.tf_idf_matrix = _index[0]
         self.inverted_index = _index[1]
         self.terms = sorted(list(_index[2]))
