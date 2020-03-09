@@ -1,9 +1,10 @@
 import numpy as np
 
-import text_processing
-from spelling_correction import SpellingCorrection, get_closest_term
+from util import text_processing
+from util.spelling_correction import SpellingCorrection, get_closest_term
 from global_variable import DOC_RETRIEVAL_LIMIT, UNFOUND_TERM_LIMIT
-from index_v2 import Index_v2, _SearchResult
+from index_v2 import Index_v2
+from intermediate_class.search_result import SearchResult
 
 
 def _vectorize_query(index: Index_v2, raw_query: str) -> (np.ndarray, SpellingCorrection):
@@ -51,7 +52,7 @@ def _vectorize_query(index: Index_v2, raw_query: str) -> (np.ndarray, SpellingCo
     return np.asarray(vectorized_query), spelling_correction_obj
 
 
-def query(index: Index_v2, query: str) -> _SearchResult:
+def query(index: Index_v2, query: str) -> SearchResult:
     vectorized_query, spelling_correction_obj = _vectorize_query(index, query)
     ranking = index.tf_idf_matrix.dot(vectorized_query).tolist()
     full_results = []
@@ -68,6 +69,6 @@ def query(index: Index_v2, query: str) -> _SearchResult:
         top_results_doc_ids.append(full_results[i][0])
         top_results_scores.append(full_results[i][1])
 
-    search_result = _SearchResult(doc_id_lst=top_results_doc_ids, correction=spelling_correction_obj,
-                                  result_scores=top_results_scores)
+    search_result = SearchResult(doc_id_lst=top_results_doc_ids, correction=spelling_correction_obj,
+                                 result_scores=top_results_scores)
     return search_result

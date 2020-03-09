@@ -1,15 +1,14 @@
 from os import listdir, makedirs
 from os.path import isfile, join, exists
 from time import time
-from memory_profiler import profile
 
-from index_configuration import IndexConfiguration
-import vsm_retrieval
-import boolean_retrieval
-from corpus import Corpus
+from intermediate_class.index_configuration import IndexConfiguration
+from retrieval_model import boolean_retrieval, vsm_retrieval
+from intermediate_class.corpus import Corpus
 from global_variable import INDEX_DIR, INDEX_FILE_EXTENSION, ALL_POSSIBLE_INDEX_CONFIGURATIONS, TMP_AVAILABLE_CORPUS, \
     VSM_MODEL, BOOLEAN_MODEL, QUERY_MODELS, COURSE_CORPUS, REUTERS_CORPUS
-from index_v2 import Index_v2, _SearchResult
+from index_v2 import Index_v2
+from intermediate_class.search_result import SearchResult
 
 
 class SearchEngine:
@@ -41,7 +40,7 @@ class SearchEngine:
         pass
 
     def _get_current_index(self):
-        tmp = int(str(self.current_se_conf.current_index_conf).replace('_', ''), base=2)
+        tmp = int(str(self.current_se_conf), base=2)
         return self.indexes[15 - tmp]
 
     def switch_stop_words_removal(self) -> None:
@@ -64,7 +63,10 @@ class SearchEngine:
         """Switch corpus"""
         self.current_se_conf.switch_corpus(corpus=corpus)
 
-    def query(self, query: str) -> _SearchResult:
+    def switch_query_expansion(self) -> None:
+        self.current_se_conf.switch_query_expansion()
+
+    def query(self, query: str) -> SearchResult:
         """
         :param query:
         :return: (list of document id, spelling correction object indicating which words are corrected if applicable)
@@ -150,8 +152,13 @@ class _SearchEngineConf:
         current_state = self.current_index_conf.normalization
         self.current_index_conf.normalization = not current_state
 
+    def switch_query_expansion(self) -> None:
+        # TODO implement
+        pass
+
     def __str__(self):
-        return 'Current model: %s, current index selected: %s' % (self.current_model, self.current_index_conf)
+        corpus = '0' if self.current_corpus == 'course_corpus' else '1'
+        return corpus + str(self.current_index_conf)
 
 
 if __name__ == '__main__':

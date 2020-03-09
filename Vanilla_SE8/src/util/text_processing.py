@@ -1,6 +1,6 @@
 import nltk
 from nltk.stem.porter import PorterStemmer
-from index_configuration import IndexConfiguration
+from intermediate_class.index_configuration import IndexConfiguration
 
 STEMMER = PorterStemmer()
 

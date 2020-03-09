@@ -1,9 +1,8 @@
-from index_configuration import __get_all_possible_index_configurations__
+from intermediate_class.index_configuration import __get_all_possible_index_configurations__
 
 """Dedicated directory"""
 INDEX_DIR = '../index/'
 CORPUS_DIR = '../corpus/'
-TERMS_DIR = INDEX_DIR
 
 """Corpus"""
 RAW_COURSE_HTML = CORPUS_DIR + 'UofO_Courses.html'
@@ -15,7 +14,7 @@ TMP_AVAILABLE_CORPUS = {'course_corpus': COURSE_CORPUS, 'Reuters': REUTERS_CORPU
 """File extension"""
 INDEX_FILE_EXTENSION = '.idx'
 CORPUS_FILE_EXTENSION = '.csv'
-TERMS_FILE_EXTENSION = '.terms'
+BIGRAM_LANGUAGE_MODEL_EXTENSION = '.blm'
 
 """Index configuration"""
 ALL_POSSIBLE_INDEX_CONFIGURATIONS = __get_all_possible_index_configurations__()
@@ -34,3 +33,7 @@ DUMMY_WORD = 'DUMMY_WORD'
 
 """Spelling correction"""
 UNFOUND_TERM_LIMIT = 3
+
+"""Bigram language model - Query completion"""
+BLM_THRESHOLD = 5
+

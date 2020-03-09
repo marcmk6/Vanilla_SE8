@@ -3,16 +3,16 @@ import pandas as pd
 from math import log10, floor
 from scipy.sparse import csr_matrix
 from os import cpu_count
+from os.path import exists
 from time import time
 import ray
 import pickle
-from memory_profiler import profile
 
-from index_configuration import IndexConfiguration
-from text_processing import process
-from global_variable import COURSE_CORPUS, REUTERS_CORPUS, INDEX_DIR, INDEX_FILE_EXTENSION
-from spelling_correction import SpellingCorrection
-from wildcard_handler import get_bigrams
+from intermediate_class.index_configuration import IndexConfiguration
+from util.text_processing import process
+from global_variable import COURSE_CORPUS, INDEX_DIR, INDEX_FILE_EXTENSION, BIGRAM_LANGUAGE_MODEL_EXTENSION, \
+    BLM_THRESHOLD, REUTERS_CORPUS
+from util.wildcard_handler import get_bigrams
 
 
 class Index_v2:
@@ -28,7 +28,7 @@ class Index_v2:
         self.terms = None  # set
         self.tf_over_corpus = None
         self.doc_ids = None
-        self.bigram_index = None
+        self.bigram_index = None  # mapping bigram to terms
 
     def build(self):
         """Build and save index"""
@@ -159,22 +159,21 @@ def __build_index__(corpus_path: str, index_conf: IndexConfiguration):
         _terms_id = ray.put(terms)
         _raw_tf_id = ray.put(raw_tf)
 
-        results = ray.get(
-            [
-                __worker__.remote(
-                    _tf_idf_dict=_tf_idf_dict_id, _terms=_terms_id, _raw_tf=_raw_tf_id,
-                    doc_ids_chunk=doc_ids_chunks[i],
-                    shape=(len(doc_ids_chunks[i]), len(terms))
-                )
-                for i in range(len(doc_ids_chunks))
-            ]
-        )
+        results = ray.get([
+            __worker__.remote(
+                _tf_idf_dict=_tf_idf_dict_id, _terms=_terms_id, _raw_tf=_raw_tf_id,
+                doc_ids_chunk=doc_ids_chunks[i],
+                shape=(len(doc_ids_chunks[i]), len(terms))
+            ) for i in range(len(doc_ids_chunks))
+        ])
 
         tf_idf_matrix = np.concatenate(results, axis=0)
 
         return csr_matrix(tf_idf_matrix)
 
-    # Main logic of constructing index
+    """
+    Main logic of constructing index
+    """
     all_terms = set()
     raw_df = {}  # k: term, v: df value
     raw_tf = {}  # k: doc_id, v: {k: term, v: tf value}
@@ -185,8 +184,17 @@ def __build_index__(corpus_path: str, index_conf: IndexConfiguration):
     # Read corpus csv file
     corpus_df = \
         pd.read_csv(corpus_path, names=['doc_id', 'title', 'content'], dtype=str, na_filter=False, index_col=False)
-
     doc_count = len(corpus_df.index)
+
+    # Building bigram language model
+    """
+    the model here is in the form of {term1: [other terms]}, other terms are sorted by frequency decreasingly
+    'other terms' are refer to those that have frequency more than the threshold
+    """
+    _blm_path = INDEX_DIR + ('0' if corpus_path == COURSE_CORPUS else '1') + BIGRAM_LANGUAGE_MODEL_EXTENSION
+    if not exists(_blm_path):
+        __build_bigram_language_model__(blm_out_path=_blm_path, corpus_df=corpus_df)
+
     corpus_df['to_be_processed'] = corpus_df['title'] + ' ' + corpus_df['content']
     corpus_df.drop(columns=['title', 'content'], inplace=True)
 
@@ -208,17 +216,53 @@ def bigrams_2_terms(index: Index_v2, bigrams: set) -> set:
     return terms_set
 
 
-class _SearchResult:
+def __build_bigram_language_model__(blm_out_path, corpus_df) -> None:
+    # during construction: k: term1, v: {k: term2, v: count of appearing after term1}
+    # at returning time, v should be stored in decreasing order by v.v, for every term
+    # v should also contain only term2 with v.v larger than threshold
+    #
+    # TODO v can be just sorted list of terms?
 
-    def __init__(self, doc_id_lst: list, correction: SpellingCorrection, result_scores: list):
-        self.doc_id_lst = doc_id_lst
-        self.correction = correction
-        self.result_scores = result_scores
+    import nltk
+
+    def update_bigram_model(term1: str, term2: str):
+        if term1 in bigram_model.keys():
+            if term2 in bigram_model[term1].keys():
+                bigram_model[term1][term2] += 1
+            else:
+                bigram_model[term1][term2] = 1
+        else:
+            bigram_model[term1] = {term2: 1}
+
+    def finalize_bigram_model():
+        tmp = {term1: sorted([(term2, count) for term2, count in v.items() if count >= BLM_THRESHOLD], reverse=True,
+                             key=lambda x: x[1]) for term1, v in bigram_model.items()}
+        tmp = {term1: [tpl[0] for tpl in v] for term1, v in tmp.items() if v != []}
+        return tmp
+
+    def process_row(row_str):
+        sentence_tokens_list = [
+            [y for y in x.split()
+             if (y not in nltk.corpus.stopwords.words('english') and y.isalpha())]
+            for x in row_str.lower().split('.') if x != '']
+
+        for sentence_tokens in sentence_tokens_list:
+            for i in range(0, len(sentence_tokens) - 1):
+                update_bigram_model(sentence_tokens[i], sentence_tokens[i + 1])
+
+    bigram_model = {}
+    corpus_df['blm'] = corpus_df['title'] + '.' + corpus_df['content']
+    corpus_df['blm'].apply(lambda row: process_row(row))
+    corpus_df.drop(columns='blm', inplace=True)
+    bigram_model = finalize_bigram_model()
+
+    with open(blm_out_path, 'w') as f:
+        # pickle.dump(bigram_model, f)
+        f.write(str(bigram_model))
 
 
 if __name__ == '__main__':
-    # ray.init(num_cpus=cpu_count())
-    corpus_path = COURSE_CORPUS
+    corpus_path = REUTERS_CORPUS
     ic = IndexConfiguration(True, True, True)
     start = time()
     index = Index_v2(corpus=corpus_path, index_conf=ic)

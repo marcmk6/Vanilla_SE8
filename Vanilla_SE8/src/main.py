@@ -9,7 +9,8 @@ from PyQt5.QtCore import pyqtSlot
 
 from search_engine import SearchEngine
 from global_variable import COURSE_CORPUS, REUTERS_CORPUS
-from corpus import preprocess_course_corpus, preprocess_reuters_corpus
+from util.corpus_preprocessing import preprocess_course_corpus, preprocess_reuters_corpus
+from UI.QueryLineEdit import QueryLineEdit
 
 BOOLEAN_MODEL_BUTTON_TEXT = 'Boolean Model'
 VSM_MODEL_BUTTON_TEXT = 'VSM Model'
@@ -62,7 +63,7 @@ class MainWindow(QWidget):
         searchLayout = QHBoxLayout()
         searchLabel = QLabel('Query: ')
         searchLayout.addWidget(searchLabel)
-        self.searchField = QLineEdit()
+        self.searchField = QueryLineEdit()
         # self.searchField.move(20, 20)
         # self.searchField.resize(200, 40)
         searchLayout.addWidget(self.searchField)
@@ -142,7 +143,17 @@ class MainWindow(QWidget):
         nm_layout.addWidget(self.nm_btn)
         vbox.addLayout(nm_layout)
 
-        # TODO: the information needed for the spelling correction
+        # query_expansion_label = QLabel('Query expansion: \t')
+        query_expansion_label = QLabel('')
+        query_expansion_layout = QHBoxLayout()
+        self.query_expansion_btn = QCheckBox('Query expansion')
+        self.query_expansion_btn.setChecked(True)
+        self.query_expansion_btn.stateChanged.connect(lambda: self.btnstate(self.query_expansion_btn))
+        self.query_expansion_btn.setToolTip(
+            'Perform normalization on both query and corpus. (e.g. low-cost -> low cost, U.S.A -> USA)')
+        query_expansion_layout.addWidget(query_expansion_label)
+        query_expansion_layout.addWidget(self.query_expansion_btn)
+        vbox.addLayout(query_expansion_layout)
 
         # add a search button
         searchButtonLayout = QHBoxLayout()
@@ -182,6 +193,8 @@ class MainWindow(QWidget):
             self.search_engine.switch_stemming()
         elif b.text() == 'Normalization':
             self.search_engine.switch_normalization()
+        elif b.text() == 'Query expansion':
+            self.search_engine.switch_query_expansion()
         else:
             pass
 

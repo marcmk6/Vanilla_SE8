@@ -1,9 +1,10 @@
 import re
 
-import text_processing
-from index_v2 import Index_v2, _SearchResult, bigrams_2_terms
-from wildcard_handler import get_bigrams
-from spelling_correction import SpellingCorrection, get_closest_term
+from util import text_processing
+from index_v2 import Index_v2, bigrams_2_terms
+from intermediate_class.search_result import SearchResult
+from util.wildcard_handler import get_bigrams
+from util.spelling_correction import SpellingCorrection, get_closest_term
 from global_variable import DUMMY_WORD, UNFOUND_TERM_LIMIT
 
 
@@ -118,7 +119,7 @@ def equivalences_2_query(equivalent_words: set, original_wildcard_query: str) ->
     return '( ' + ' OR '.join(t) + ' )'
 
 
-def query(index: Index_v2, raw_query: str) -> _SearchResult:
+def query(index: Index_v2, raw_query: str) -> SearchResult:
     raw_query = raw_query.replace('(', '( ')
     raw_query = raw_query.replace(')', ' )')
 
@@ -155,8 +156,8 @@ def query(index: Index_v2, raw_query: str) -> _SearchResult:
     # Single word query
     if len(postfix_expr_tokens) == 1:
         retrieved_doc_ids = index.get(postfix_expr_tokens.pop())
-        tmp = _SearchResult(doc_id_lst=retrieved_doc_ids, correction=spelling_correction_obj,
-                            result_scores=[1] * len(retrieved_doc_ids))
+        tmp = SearchResult(doc_id_lst=retrieved_doc_ids, correction=spelling_correction_obj,
+                           result_scores=[1] * len(retrieved_doc_ids))
         return tmp
 
     operand_stack = []
@@ -181,6 +182,6 @@ def query(index: Index_v2, raw_query: str) -> _SearchResult:
             result = perform_bool_operation(expr_token, operand_1, operand_2)
             operand_stack.append(result)
 
-    search_result = _SearchResult(doc_id_lst=result, correction=spelling_correction_obj,
-                                  result_scores=[1] * len(result))
+    search_result = SearchResult(doc_id_lst=result, correction=spelling_correction_obj,
+                                 result_scores=[1] * len(result))
     return search_result

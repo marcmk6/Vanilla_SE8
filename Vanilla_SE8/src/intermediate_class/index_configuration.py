@@ -17,4 +17,5 @@ def __get_all_possible_index_configurations__():
             for n in _range:
                 lst.append(
                     IndexConfiguration(stop_words_removal=bool(swr), stemming=bool(s), normalization=bool(n)))
+    # lst.append(IndexConfiguration(True, True, True))
     return lst
