@@ -1,6 +1,7 @@
 import os
 import sys
 
+from PyQt5.Qt import Qt
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QWidget, QApplication, QLineEdit, QPushButton, QRadioButton, QMessageBox, QHBoxLayout, \
     QVBoxLayout, QLabel, QButtonGroup, QTextEdit, QListView, QDialog, QCheckBox
@@ -10,7 +11,8 @@ from PyQt5.QtCore import pyqtSlot
 from search_engine import SearchEngine
 from global_variable import COURSE_CORPUS, REUTERS_CORPUS
 from util.corpus_preprocessing import preprocess_course_corpus, preprocess_reuters_corpus
-from UI.QueryLineEdit import QueryLineEdit
+from UI_component.query_line_edit import QueryLineEdit
+from UI_component.query_completer import QueryCompleter
 
 BOOLEAN_MODEL_BUTTON_TEXT = 'Boolean Model'
 VSM_MODEL_BUTTON_TEXT = 'VSM Model'
@@ -63,10 +65,24 @@ class MainWindow(QWidget):
         searchLayout = QHBoxLayout()
         searchLabel = QLabel('Query: ')
         searchLayout.addWidget(searchLabel)
-        self.searchField = QueryLineEdit()
+        self.query_line_edit = QueryLineEdit()
+        qc_obj_0 = self.search_engine.get_query_completion_obj(0)
+        qc_obj_1 = self.search_engine.get_query_completion_obj(1)
+        self.query_completer_0 = QueryCompleter(self.query_line_edit, all_terms=qc_obj_0.all_terms,
+                                                bigram_model=qc_obj_0.bigram_model)
+        self.query_completer_1 = QueryCompleter(self.query_line_edit, all_terms=qc_obj_1.all_terms,
+                                                bigram_model=qc_obj_1.bigram_model)
+        self.query_completer_0.setCaseSensitivity(Qt.CaseInsensitive)
+        self.query_completer_1.setCaseSensitivity(Qt.CaseInsensitive)
+        self.query_line_edit.to_complete_following_word.connect(self.query_completer_0.complete_following_term)
+        self.query_line_edit.to_complete_term.connect(self.query_completer_0.complete_incomplete_term)
+        self.query_completer_0.activated.connect(self.query_line_edit.update_query)
+        self.query_completer_1.activated.connect(self.query_line_edit.update_query)
+        self.query_completer_0.setWidget(self.query_line_edit)
+
         # self.searchField.move(20, 20)
         # self.searchField.resize(200, 40)
-        searchLayout.addWidget(self.searchField)
+        searchLayout.addWidget(self.query_line_edit)
         vbox.addLayout(searchLayout)
 
         # add choice of model, Boolean, or VSM
@@ -149,8 +165,8 @@ class MainWindow(QWidget):
         self.query_expansion_btn = QCheckBox('Query expansion')
         self.query_expansion_btn.setChecked(True)
         self.query_expansion_btn.stateChanged.connect(lambda: self.btnstate(self.query_expansion_btn))
-        self.query_expansion_btn.setToolTip(
-            'Perform normalization on both query and corpus. (e.g. low-cost -> low cost, U.S.A -> USA)')
+        # self.query_expansion_btn.setToolTip(
+        #     'Perform normalization on both query and corpus. (e.g. low-cost -> low cost, U.S.A -> USA)')
         query_expansion_layout.addWidget(query_expansion_label)
         query_expansion_layout.addWidget(self.query_expansion_btn)
         vbox.addLayout(query_expansion_layout)
@@ -186,6 +202,20 @@ class MainWindow(QWidget):
 
         self.show()
 
+    def _switch_completer(self, i):
+        if i == 0:
+            self.query_line_edit.to_complete_following_word.disconnect()
+            self.query_line_edit.to_complete_term.disconnect()
+            self.query_line_edit.to_complete_following_word.connect(self.query_completer_0.complete_following_term)
+            self.query_line_edit.to_complete_term.connect(self.query_completer_0.complete_incomplete_term)
+            self.query_completer_0.setWidget(self.query_line_edit)
+        else:
+            self.query_line_edit.to_complete_following_word.disconnect()
+            self.query_line_edit.to_complete_term.disconnect()
+            self.query_line_edit.to_complete_following_word.connect(self.query_completer_1.complete_following_term)
+            self.query_line_edit.to_complete_term.connect(self.query_completer_1.complete_incomplete_term)
+            self.query_completer_1.setWidget(self.query_line_edit)
+
     def btnstate(self, b):
         if b.text() == 'Remove stopwords':
             self.search_engine.switch_stop_words_removal()
@@ -210,7 +240,7 @@ class MainWindow(QWidget):
     @pyqtSlot()
     def click_search(self):
 
-        query_string = self.searchField.text().strip()
+        query_string = self.query_line_edit.text().strip()
 
         # setup QMessageBox
         if query_string == '':
@@ -249,9 +279,11 @@ class MainWindow(QWidget):
                 # else:
                 #     raise Exception('Could not find '%s'' % html_file)
                 self.search_engine.switch_corpus('course_corpus')
+                self._switch_completer(0)
                 print('Switched to course_corpus')
             elif button.text() == 'Reuters':
                 self.search_engine.switch_corpus('Reuters')
+                self._switch_completer(1)
                 print('Switched to Reuters')
 
     def selectItem(self):

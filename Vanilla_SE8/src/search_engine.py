@@ -7,7 +7,7 @@ from intermediate_class.index_configuration import IndexConfiguration
 from retrieval_model import boolean_retrieval, vsm_retrieval
 from intermediate_class.corpus import Corpus
 from global_variable import INDEX_DIR, INDEX_FILE_EXTENSION, ALL_POSSIBLE_INDEX_CONFIGURATIONS, TMP_AVAILABLE_CORPUS, \
-    VSM_MODEL, BOOLEAN_MODEL, QUERY_MODELS, COURSE_CORPUS, REUTERS_CORPUS
+    VSM_MODEL, BOOLEAN_MODEL, QUERY_MODELS, COURSE_CORPUS, REUTERS_CORPUS, QUERY_COMPLETION_FILE_EXTENSION
 from index_v2 import Index_v2
 from intermediate_class.search_result import SearchResult
 
@@ -18,6 +18,7 @@ class SearchEngine:
         self.indexes = []
         self.current_se_conf = _SearchEngineConf(model=model, index_conf=index_conf)
         self.corpus_lst = [Corpus(corpus_file=COURSE_CORPUS), Corpus(corpus_file=REUTERS_CORPUS)]
+        self.query_completion_lst = []
 
     def build_index(self) -> None:
         """
@@ -31,6 +32,8 @@ class SearchEngine:
         """
         Load existing indexes
         """
+        import pickle
+
         assert self.check_index_integrity()
         self.indexes = []
         index_files = [f for f in listdir(INDEX_DIR) if isfile(join(INDEX_DIR, f)) and f.endswith(INDEX_FILE_EXTENSION)]
@@ -38,7 +41,19 @@ class SearchEngine:
         for index_file in index_files:
             self.indexes.append(Index_v2.load(INDEX_DIR + index_file))
 
+        query_completion_files = [f for f in listdir(INDEX_DIR)
+                                  if isfile(join(INDEX_DIR, f)) and f.endswith(QUERY_COMPLETION_FILE_EXTENSION)]
+        query_completion_files = sorted(query_completion_files)
+        for qc in query_completion_files:
+            with open(INDEX_DIR + qc, 'rb') as f:
+                qc_obj = pickle.load(f)
+            self.query_completion_lst.append(qc_obj)
+
         pass
+
+    def get_query_completion_obj(self, i):
+        # qc_idx = 0 if self.current_se_conf.current_corpus == 'course_corpus' else 1
+        return self.query_completion_lst[i]
 
     def _get_current_index(self):
         tmp = int(str(self.current_se_conf), base=2)
