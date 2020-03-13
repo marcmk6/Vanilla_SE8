@@ -1,6 +1,5 @@
 import csv
 import os
-import re
 
 from bs4 import BeautifulSoup
 
@@ -10,7 +9,7 @@ from global_variable import RAW_COURSE_HTML, COURSE_CORPUS, RAW_RETUERS_DIR, REU
 def preprocess_course_corpus():
     def _separate_files(src_file):
         end = '</html>'
-        with open(src_file, 'r') as f:
+        with open('../'+src_file, 'r') as f:
             files = f.read().split(end)
         return files
 
@@ -32,8 +31,8 @@ def preprocess_course_corpus():
                 if 1 <= int(name[5]) <= 3:  # english course
                     course_name.append(name)
 
-                    # doc_id = 'course_' + str(n)
-                    doc_id = re.sub(' ', '_', name[:8])
+                    doc_id = 'course_' + str(n)
+                    # doc_id = re.sub(' ', '_', name[:8])
                     n += 1
 
                     doc_id_lst.append(doc_id)
@@ -43,14 +42,14 @@ def preprocess_course_corpus():
                     else:
                         course_description_lst.append('')
 
-        with open(COURSE_CORPUS, 'a', newline='') as o:
+        with open('../'+COURSE_CORPUS, 'a', newline='') as o:
             writer = csv.writer(o)
             for doc_id, name, course_description in zip(doc_id_lst, course_name, course_description_lst):
                 writer.writerow([doc_id, name, course_description])
 
 
 def preprocess_reuters_corpus():
-    target_files = [f for f in os.listdir(RAW_RETUERS_DIR) if f.endswith('021.sgm')]  # FIXME
+    target_files = [f for f in os.listdir('../' + RAW_RETUERS_DIR) if f.endswith('021.sgm')]  # FIXME
     target_files = sorted(target_files)
 
     # Extract information
@@ -59,7 +58,7 @@ def preprocess_reuters_corpus():
     topics_lst = []
     titles = []
     for target_file in target_files:
-        with open(RAW_RETUERS_DIR + target_file, 'r', encoding='ISO-8859-1') as f:
+        with open('../' + RAW_RETUERS_DIR + target_file, 'r', encoding='ISO-8859-1') as f:
             src_file = f.read()
         soup = BeautifulSoup(src_file, 'html.parser')
         for e in soup.find_all('reuters'):
@@ -75,12 +74,12 @@ def preprocess_reuters_corpus():
             titles.append(title)
 
     # Write corpus
-    with open(REUTERS_CORPUS, 'w', newline='') as o:
+    with open('../' + REUTERS_CORPUS, 'w', newline='') as o:
         writer = csv.writer(o)
         for doc_id, title, content, topics in zip(doc_ids, titles, contents, topics_lst):
             writer.writerow([doc_id, title, content, topics])
 
 
 if __name__ == '__main__':
-    preprocess_course_corpus()
-    # preprocess_reuters_corpus()
+    # preprocess_course_corpus()
+    preprocess_reuters_corpus()

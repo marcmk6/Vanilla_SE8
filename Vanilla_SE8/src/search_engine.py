@@ -92,6 +92,9 @@ class SearchEngine:
         else:
             return boolean_retrieval.query(self._get_current_index(), query)
 
+    def expand_query_globally(self):
+        pass
+
     def get_doc_content(self, doc_id: str):
         current_corpus = self.corpus_lst[
             (lambda x: 0 if x == 'course_corpus' else 1)(self.current_se_conf.current_corpus)]
