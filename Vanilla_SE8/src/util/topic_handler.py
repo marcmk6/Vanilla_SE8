@@ -13,7 +13,7 @@ class TopicHandler:
         doc_ids_lst = [self.topic_inverted_index[topic] for topic in topic_list]
 
         if len(doc_ids_lst) == 0:
-            return []
+            return set()
 
         r = set(doc_ids_lst[0])
         for i in range(1, len(topic_list)):
