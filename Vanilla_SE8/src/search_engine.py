@@ -10,6 +10,9 @@ from global_variable import INDEX_DIR, INDEX_FILE_EXTENSION, ALL_POSSIBLE_INDEX_
     VSM_MODEL, BOOLEAN_MODEL, QUERY_MODELS, COURSE_CORPUS, REUTERS_CORPUS, QUERY_COMPLETION_FILE_EXTENSION
 from index_v2 import Index_v2
 from intermediate_class.search_result import SearchResult
+from util.global_query_expansion import expand_query_globally
+from intermediate_class.query_completion import QueryCompletion
+from util.topic_handler import TopicHandler
 
 
 class SearchEngine:
@@ -19,6 +22,9 @@ class SearchEngine:
         self.current_se_conf = _SearchEngineConf(model=model, index_conf=index_conf)
         self.corpus_lst = [Corpus(corpus_file=COURSE_CORPUS), Corpus(corpus_file=REUTERS_CORPUS)]
         self.query_completion_lst = []
+        self.all_topics = []  # reuters
+        self.currently_selected_topics = []
+        self.__topic_handler__ = TopicHandler()
 
     def build_index(self) -> None:
         """
@@ -32,8 +38,8 @@ class SearchEngine:
         """
         Load existing indexes
         """
-        import pickle
 
+        # load inverted index and tf-idf index
         assert self.check_index_integrity()
         self.indexes = []
         index_files = [f for f in listdir(INDEX_DIR) if isfile(join(INDEX_DIR, f)) and f.endswith(INDEX_FILE_EXTENSION)]
@@ -41,15 +47,30 @@ class SearchEngine:
         for index_file in index_files:
             self.indexes.append(Index_v2.load(INDEX_DIR + index_file))
 
+        # load query completion data
         query_completion_files = [f for f in listdir(INDEX_DIR)
                                   if isfile(join(INDEX_DIR, f)) and f.endswith(QUERY_COMPLETION_FILE_EXTENSION)]
         query_completion_files = sorted(query_completion_files)
-        for qc in query_completion_files:
-            with open(INDEX_DIR + qc, 'rb') as f:
-                qc_obj = pickle.load(f)
+        for qc_file_name in query_completion_files:
+            qc_obj = QueryCompletion.load(INDEX_DIR + qc_file_name)
             self.query_completion_lst.append(qc_obj)
 
+        # load reuters topics
+        self.all_topics = self.__topic_handler__.get_all_topics()
+        self.currently_selected_topics = self.all_topics
         pass
+
+    def get_all_topics(self):
+        return self.all_topics
+
+    def switch_all_selection(self):
+        if len(self.currently_selected_topics) < len(self.all_topics):
+            self.set_selected_topics(self.all_topics)
+        else:
+            self.set_selected_topics([])
+
+    def set_selected_topics(self, topic_list):
+        self.currently_selected_topics = topic_list
 
     def get_query_completion_obj(self, i):
         # qc_idx = 0 if self.current_se_conf.current_corpus == 'course_corpus' else 1
@@ -87,13 +108,26 @@ class SearchEngine:
         :param query:
         :return: (list of document id, spelling correction object indicating which words are corrected if applicable)
         """
-        if self.current_se_conf.current_model == VSM_MODEL:
-            return vsm_retrieval.query(self._get_current_index(), query)
-        else:
-            return boolean_retrieval.query(self._get_current_index(), query)
+        if self.current_se_conf.query_expansion:
+            query = self.expand_query_globally(query)
 
-    def expand_query_globally(self):
-        pass
+        if self.current_se_conf.current_model == VSM_MODEL:
+            query_result = vsm_retrieval.query(self._get_current_index(), query)
+        else:
+            query_result = boolean_retrieval.query(self._get_current_index(), query)
+
+        # filter results by topic
+        if self.current_se_conf.current_corpus == 'Reuters':
+            if len(self.currently_selected_topics) < len(self.all_topics):
+                selected_doc_id_range = self.__topic_handler__.get_docids_with_topics(
+                    self.currently_selected_topics)
+                query_result.filter_by_doc_ids(selected_doc_id_range)
+
+        return query_result
+
+    @staticmethod
+    def expand_query_globally(query: str) -> str:
+        return expand_query_globally(query)
 
     def get_doc_content(self, doc_id: str):
         current_corpus = self.corpus_lst[
@@ -145,6 +179,7 @@ class _SearchEngineConf:
 
         self.current_model = model
         self.current_corpus = corpus
+        self.query_expansion = False
 
     def switch_corpus(self, corpus=None) -> None:
         assert (corpus in TMP_AVAILABLE_CORPUS.keys())
@@ -174,8 +209,7 @@ class _SearchEngineConf:
         self.current_index_conf.normalization = not current_state
 
     def switch_query_expansion(self) -> None:
-        # TODO implement
-        pass
+        self.query_expansion = not self.query_expansion
 
     def __str__(self):
         corpus = '0' if self.current_corpus == 'course_corpus' else '1'

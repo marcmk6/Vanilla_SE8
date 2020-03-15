@@ -13,6 +13,7 @@ from global_variable import COURSE_CORPUS, REUTERS_CORPUS
 from util.corpus_preprocessing import preprocess_course_corpus, preprocess_reuters_corpus
 from UI_component.query_line_edit import QueryLineEdit
 from UI_component.query_completer import QueryCompleter
+from UI_component.qcheckcombobox import CheckComboBox
 
 BOOLEAN_MODEL_BUTTON_TEXT = 'Boolean Model'
 VSM_MODEL_BUTTON_TEXT = 'VSM Model'
@@ -52,7 +53,8 @@ class MainWindow(QWidget):
         self.setLayout(vbox)
 
         # default size
-        self.resize(640, 480)
+        # self.resize(640, 480)
+        self.resize(800, 600)
 
         # main window title
         self.setWindowTitle('Vanilla_SE8 SE 8')
@@ -163,13 +165,38 @@ class MainWindow(QWidget):
         query_expansion_label = QLabel('')
         query_expansion_layout = QHBoxLayout()
         self.query_expansion_btn = QCheckBox('Query expansion')
-        self.query_expansion_btn.setChecked(True)
+        self.query_expansion_btn.setChecked(False)
         self.query_expansion_btn.stateChanged.connect(lambda: self.btnstate(self.query_expansion_btn))
         # self.query_expansion_btn.setToolTip(
         #     'Perform normalization on both query and corpus. (e.g. low-cost -> low cost, U.S.A -> USA)')
         query_expansion_layout.addWidget(query_expansion_label)
         query_expansion_layout.addWidget(self.query_expansion_btn)
         vbox.addLayout(query_expansion_layout)
+
+        topic_label = QLabel('Topic selection:')
+        cbhboxlayout = QHBoxLayout()
+        self.topic_check_box = CheckComboBox(placeholderText="None")
+        model = self.topic_check_box.model()
+        for i, topic in enumerate(self.search_engine.get_all_topics()):
+            self.topic_check_box.addItem(topic)
+            model.item(i).setCheckable(True)
+        self.topic_check_box.currentTextChanged.connect(
+            lambda: self._topic_selection_changed(self.topic_check_box.get_selected_items()))
+        self.topic_check_box.select_all()
+        self._topic_selection_changed(self.topic_check_box.get_selected_items())
+        cbhboxlayout.addWidget(topic_label)
+        cbhboxlayout.addWidget(self.topic_check_box)
+        vbox.addLayout(cbhboxlayout)
+
+        select_all_btn_layout = QHBoxLayout()
+        self.select_all_btn = QPushButton('Select/Deselect all topics')
+        self.select_all_btn.clicked.connect(self.switch_all_topic_selection)
+        # self.topic_check_box.deselect_all()
+        self.select_all_btn.clicked.connect(
+            lambda: self._topic_selection_changed(self.topic_check_box.get_selected_items()))
+        select_all_btn_layout.addStretch(1)
+        select_all_btn_layout.addWidget(self.select_all_btn)
+        vbox.addLayout(select_all_btn_layout)
 
         # add a search button
         searchButtonLayout = QHBoxLayout()
@@ -201,6 +228,15 @@ class MainWindow(QWidget):
         self.center()
 
         self.show()
+
+    def _topic_selection_changed(self, topic_list):
+        print('topic selection changed')
+        print('current selection: %s' % topic_list)
+        self.search_engine.set_selected_topics(topic_list)
+
+    def switch_all_topic_selection(self):
+        self.topic_check_box.switch_all_selection()
+        self.search_engine.switch_all_selection()
 
     def _switch_completer(self, i):
         if i == 0:
@@ -247,18 +283,18 @@ class MainWindow(QWidget):
             self.__create_message_box('Please enter your query')
         else:
             search_result = self.search_engine.query(query_string)
-            self.retrieved_doc_ids, corrections, scores = search_result.doc_id_lst, search_result.correction, search_result.result_scores
+            self.retrieved_doc_ids, corrections, scores = search_result.doc_id_list, search_result.correction, search_result.result_scores
+
+            model = QStandardItemModel()
+            for doc_id, score in zip(self.retrieved_doc_ids, scores):
+                doc_title = self.search_engine.get_doc_title(doc_id)
+                item = QStandardItem('[Score: %s] ' % round(score, 4) + doc_title)
+                model.appendRow(item)
+            self.queryResult.setModel(model)
+            self.queryResult.show()
 
             if len(self.retrieved_doc_ids) == 0:
                 self.__create_message_box('Could not find anything.')
-            else:
-                model = QStandardItemModel()
-                for doc_id, score in zip(self.retrieved_doc_ids, scores):
-                    doc_title = self.search_engine.get_doc_title(doc_id)
-                    item = QStandardItem('[Score: %s] ' % round(score, 4) + doc_title)
-                    model.appendRow(item)
-                self.queryResult.setModel(model)
-                self.queryResult.show()
 
             if corrections.correction_made():
                 self.__create_message_box('Did you mean ... ?\n' + str(corrections))

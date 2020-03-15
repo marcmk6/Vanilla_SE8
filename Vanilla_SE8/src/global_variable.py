@@ -37,3 +37,5 @@ UNFOUND_TERM_LIMIT = 3
 """Bigram language model - Query completion"""
 BLM_THRESHOLD = 5
 
+"""Reuters - topic"""
+TOPIC_INVERTED_INDEX = CORPUS_DIR + 'topic.idx'

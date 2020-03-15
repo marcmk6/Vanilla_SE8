@@ -59,7 +59,9 @@ class Index_v2:
     def get(self, term: str) -> list:
         """Get postings list by term"""
         if term in self.terms:
-            return self.inverted_index[term]
+            tmp = self.inverted_index[term]
+            tmp = [int(e) for e in tmp]
+            return tmp
         else:
             return []
 

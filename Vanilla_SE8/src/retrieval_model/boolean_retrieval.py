@@ -156,7 +156,7 @@ def query(index: Index_v2, raw_query: str) -> SearchResult:
     # Single word query
     if len(postfix_expr_tokens) == 1:
         retrieved_doc_ids = index.get(postfix_expr_tokens.pop())
-        tmp = SearchResult(doc_id_lst=retrieved_doc_ids, correction=spelling_correction_obj,
+        tmp = SearchResult(doc_id_list=retrieved_doc_ids, correction=spelling_correction_obj,
                            result_scores=[1] * len(retrieved_doc_ids))
         return tmp
 
@@ -182,6 +182,6 @@ def query(index: Index_v2, raw_query: str) -> SearchResult:
             result = perform_bool_operation(expr_token, operand_1, operand_2)
             operand_stack.append(result)
 
-    search_result = SearchResult(doc_id_lst=result, correction=spelling_correction_obj,
+    search_result = SearchResult(doc_id_list=result, correction=spelling_correction_obj,
                                  result_scores=[1] * len(result))
     return search_result

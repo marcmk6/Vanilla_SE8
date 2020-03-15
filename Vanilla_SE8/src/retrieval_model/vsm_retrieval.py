@@ -69,6 +69,6 @@ def query(index: Index_v2, query: str) -> SearchResult:
         top_results_doc_ids.append(full_results[i][0])
         top_results_scores.append(full_results[i][1])
 
-    search_result = SearchResult(doc_id_lst=top_results_doc_ids, correction=spelling_correction_obj,
+    search_result = SearchResult(doc_id_list=top_results_doc_ids, correction=spelling_correction_obj,
                                  result_scores=top_results_scores)
     return search_result

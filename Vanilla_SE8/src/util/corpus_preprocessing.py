@@ -31,7 +31,8 @@ def preprocess_course_corpus():
                 if 1 <= int(name[5]) <= 3:  # english course
                     course_name.append(name)
 
-                    doc_id = 'course_' + str(n)
+                    # doc_id = 'course_' + str(n)
+                    doc_id = n
                     # doc_id = re.sub(' ', '_', name[:8])
                     n += 1
 
@@ -81,5 +82,5 @@ def preprocess_reuters_corpus():
 
 
 if __name__ == '__main__':
-    # preprocess_course_corpus()
-    preprocess_reuters_corpus()
+    preprocess_course_corpus()
+    # preprocess_reuters_corpus()
