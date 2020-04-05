@@ -6,10 +6,10 @@ def expand_query_globally(query: str) -> str:
     # FIXME
     # start = time()
     tokens = query.split()
-    new_query = set()
-    new_query.update(tokens)
+    new_query = []
     for token in tokens:
-        new_query.update(get_synonyms(token))
+        new_query.append(token)
+        new_query += list(get_synonyms(token))
     # print('expand_query_globally: %s seconds' % (time() - start))
     return ' '.join(new_query)
 
@@ -21,7 +21,7 @@ def get_synonyms(word: str) -> set:
             tmp = [e for e in syn.lemma_names() if e.isalpha()]
             tmp = tmp[:3]
             synonyms.update(tmp)
-    return synonyms
+    return synonyms - {word}
 
 
 if __name__ == '__main__':

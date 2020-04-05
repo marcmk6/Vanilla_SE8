@@ -100,16 +100,11 @@ class SearchEngine:
         """Switch corpus"""
         self.current_se_conf.switch_corpus(corpus=corpus)
 
-    def switch_query_expansion(self) -> None:
-        self.current_se_conf.switch_query_expansion()
-
     def query(self, query: str) -> SearchResult:
         """
         :param query:
         :return: (list of document id, spelling correction object indicating which words are corrected if applicable)
         """
-        if self.current_se_conf.query_expansion:
-            query = self.expand_query_globally(query)
 
         if self.current_se_conf.current_model == VSM_MODEL:
             query_result = vsm_retrieval.query(self._get_current_index(), query)
@@ -179,7 +174,6 @@ class _SearchEngineConf:
 
         self.current_model = model
         self.current_corpus = corpus
-        self.query_expansion = False
 
     def switch_corpus(self, corpus=None) -> None:
         assert (corpus in TMP_AVAILABLE_CORPUS.keys())
@@ -207,9 +201,6 @@ class _SearchEngineConf:
     def switch_normalization(self) -> None:
         current_state = self.current_index_conf.normalization
         self.current_index_conf.normalization = not current_state
-
-    def switch_query_expansion(self) -> None:
-        self.query_expansion = not self.query_expansion
 
     def __str__(self):
         corpus = '0' if self.current_corpus == 'course_corpus' else '1'

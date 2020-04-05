@@ -82,5 +82,5 @@ def preprocess_reuters_corpus():
 
 
 if __name__ == '__main__':
-    preprocess_course_corpus()
-    # preprocess_reuters_corpus()
+    # preprocess_course_corpus()
+    preprocess_reuters_corpus()

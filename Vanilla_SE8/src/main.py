@@ -30,6 +30,7 @@ class MainWindow(QWidget):
         super().__init__()
         self.setup_se()
         self.initUI()
+        self.__query_expansion__ = False
 
     def setup_se(self):
         # preprocess_reuters_corpus()  # TODO remove
@@ -164,7 +165,7 @@ class MainWindow(QWidget):
         # query_expansion_label = QLabel('Query expansion: \t')
         query_expansion_label = QLabel('')
         query_expansion_layout = QHBoxLayout()
-        self.query_expansion_btn = QCheckBox('Query expansion')
+        self.query_expansion_btn = QCheckBox('Global query expansion')
         self.query_expansion_btn.setChecked(False)
         self.query_expansion_btn.stateChanged.connect(lambda: self.btnstate(self.query_expansion_btn))
         # self.query_expansion_btn.setToolTip(
@@ -259,8 +260,8 @@ class MainWindow(QWidget):
             self.search_engine.switch_stemming()
         elif b.text() == 'Normalization':
             self.search_engine.switch_normalization()
-        elif b.text() == 'Query expansion':
-            self.search_engine.switch_query_expansion()
+        elif b.text() == 'Global query expansion':
+            self.__query_expansion__ = not self.__query_expansion__
         else:
             pass
 
@@ -282,6 +283,15 @@ class MainWindow(QWidget):
         if query_string == '':
             self.__create_message_box('Please enter your query')
         else:
+            if self.__query_expansion__:
+                expanded = self.search_engine.expand_query_globally(query_string)
+                qm = QMessageBox()
+                reply = qm.question(
+                    self, 'Warning', 'Would you like to expand the query to: "%s" ?' % expanded,
+                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+                if reply == QMessageBox.Yes:
+                    query_string = expanded
+
             search_result = self.search_engine.query(query_string)
             self.retrieved_doc_ids, corrections, scores = search_result.doc_id_list, search_result.correction, search_result.result_scores
 

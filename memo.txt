@@ -1,0 +1,22 @@
+- Bigram language model
+
+The bigram language model is stored as dictionary, whose keys are terms and values are list of following terms in corpus, with a threshod of 5 and sorted by appearance frequency.
+It should be noticed that, following terms may be not strictly the next word since stopwords are ignored.
+
+
+- Query completion
+
+The implementation doesn't only support the predicition of next word, it also provides the ability to complete an incomplete term. This is similar to what you experience while using Google.
+When a user is typing a word, possible words would appear in a list under the search box, from which user can select using direction keys and ENTER. One can also do this by double-clicking a word in the list.
+To complete a query, user can hit SPACE after a complete word and a list of completion candidates would appear.
+
+
+- Text categorization with kNN
+
+Vectorization of concatenated document title and content are selected as the representation of each document, with some special characters and stopwords removed. Please check the jupyter notebook "topic_classification" for details.
+
+Minkowski with order 2 (p=2) is used as the distance metric. 
+
+The average number of topics among those documents that have topic information is 1, so k=1 is selected.
+
+The topic predictions are stored as an inverted index.
