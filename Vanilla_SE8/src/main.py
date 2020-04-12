@@ -234,8 +234,8 @@ class MainWindow(QWidget):
         self.show()
 
     def _topic_selection_changed(self, topic_list):
-        # print('topic selection changed')
-        # print('current selection: %s' % topic_list)
+        print('topic selection changed')
+        print('current selection: %s' % topic_list)
         self.search_engine.set_selected_topics(topic_list)
 
     def switch_all_topic_selection(self):
