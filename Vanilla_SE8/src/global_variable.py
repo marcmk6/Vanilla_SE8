@@ -39,3 +39,8 @@ BLM_THRESHOLD = 5
 
 """Reuters - topic"""
 TOPIC_INVERTED_INDEX = CORPUS_DIR + 'topic.idx'
+
+"""Relevance feedback"""
+ALPHA = 1
+BETA = 0.75
+GAMMA = 0.15

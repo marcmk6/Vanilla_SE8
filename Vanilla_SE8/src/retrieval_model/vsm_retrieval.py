@@ -5,9 +5,10 @@ from util.spelling_correction import SpellingCorrection, get_closest_term
 from global_variable import DOC_RETRIEVAL_LIMIT, UNFOUND_TERM_LIMIT
 from index_v2 import Index_v2
 from intermediate_class.search_result import SearchResult
+from util.relevance_feedback import RelevanceFeedbackSession
 
 
-def _vectorize_query(index: Index_v2, raw_query: str) -> (np.ndarray, SpellingCorrection):
+def vectorize_query(index: Index_v2, raw_query: str) -> (np.ndarray, SpellingCorrection):
     """
     Vectorize query
     If there is any unfound term, perform spelling correction
@@ -40,7 +41,8 @@ def _vectorize_query(index: Index_v2, raw_query: str) -> (np.ndarray, SpellingCo
             unfound_terms_correction.append((term_not_found, correction))
 
         # Take top N most likely candidates
-        unfound_terms_correction = sorted(unfound_terms_correction, key=lambda x: index.get_total_term_frequency(x[1]),
+        unfound_terms_correction = sorted(unfound_terms_correction,
+                                          key=lambda x: index.get_total_term_frequency(x[1]),
                                           reverse=True)[:UNFOUND_TERM_LIMIT]
 
         for unfound_term, correction in unfound_terms_correction:
@@ -52,8 +54,14 @@ def _vectorize_query(index: Index_v2, raw_query: str) -> (np.ndarray, SpellingCo
     return np.asarray(vectorized_query), spelling_correction_obj
 
 
-def query(index: Index_v2, query: str) -> SearchResult:
-    vectorized_query, spelling_correction_obj = _vectorize_query(index, query)
+def query(index: Index_v2, query: str, rf_session: RelevanceFeedbackSession) -> SearchResult:
+    if rf_session.exists_rf(query):
+        # for the same misspelled query, only provides/shows spelling correction for the first time
+        spelling_correction_obj = SpellingCorrection(mapping={})
+        vectorized_query = rf_session.get_expanded_query(query)
+    else:
+        vectorized_query, spelling_correction_obj = vectorize_query(index, query)
+
     ranking = index.tf_idf_matrix.dot(vectorized_query).tolist()
     full_results = []
     for i, score in enumerate(ranking):

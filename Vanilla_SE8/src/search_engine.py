@@ -13,6 +13,7 @@ from intermediate_class.search_result import SearchResult
 from util.global_query_expansion import expand_query_globally
 from intermediate_class.query_completion import QueryCompletion
 from util.topic_handler import TopicHandler
+from util.relevance_feedback import RelevanceFeedbackSession, RelevanceFeedback
 
 
 class SearchEngine:
@@ -25,6 +26,7 @@ class SearchEngine:
         self.all_topics = []  # reuters
         self.currently_selected_topics = []
         self.__topic_handler__ = TopicHandler()
+        self.rf_session = RelevanceFeedbackSession()
 
     def build_index(self) -> None:
         """
@@ -59,6 +61,18 @@ class SearchEngine:
         self.all_topics = self.__topic_handler__.get_all_topics()
         self.currently_selected_topics = self.all_topics
         pass
+
+    def add_relevance_feedback(self, query: str, p_doc_ids: list, n_doc_ids: list):
+        def vectorize_doc(doc_id):
+            content = self.get_doc_content(doc_id)
+            vec = vsm_retrieval.vectorize_query(self._get_current_index(), content)[0]
+            return vec
+
+        p_doc_vecs = [vectorize_doc(doc_id) for doc_id in p_doc_ids]
+        n_doc_vecs = [vectorize_doc(doc_id) for doc_id in n_doc_ids]
+        query_vec = vsm_retrieval.vectorize_query(self._get_current_index(), query)[0]
+        rf = RelevanceFeedback(query_vec, p_doc_vecs, n_doc_vecs)
+        self.rf_session.add_relevance_feedback(query, rf)
 
     def get_all_topics(self):
         return self.all_topics
@@ -107,11 +121,11 @@ class SearchEngine:
         """
 
         if self.current_se_conf.current_model == VSM_MODEL:
-            query_result = vsm_retrieval.query(self._get_current_index(), query)
+            query_result = vsm_retrieval.query(self._get_current_index(), query, self.rf_session)
         else:
             query_result = boolean_retrieval.query(self._get_current_index(), query)
 
-        # filter results by topic
+        # filter results by topic, Reuters only
         if self.current_se_conf.current_corpus == 'Reuters':
             if len(self.currently_selected_topics) < len(self.all_topics):
                 selected_doc_id_range = self.__topic_handler__.get_docids_with_topics(
@@ -209,4 +223,13 @@ class _SearchEngineConf:
 
 if __name__ == '__main__':
     se = SearchEngine(model='vsm')
-    se.build_index()
+    se.load_index()
+    se.switch_corpus('Reuters')
+    pass
+    r = se.vectorize_doc('21004')[0]
+    count = 0
+    for e in r.tolist():
+        if e != 0:
+            count += 1
+    pass
+    # se.build_index()

@@ -31,6 +31,8 @@ class MainWindow(QWidget):
         self.setup_se()
         self.initUI()
         self.__query_expansion__ = False
+        self.relevance_memory = {}  # k: query, v:([positive doc ids], [negative doc ids])
+        self.__current_query__ = ''
 
     def setup_se(self):
         # preprocess_reuters_corpus()  # TODO remove
@@ -201,11 +203,11 @@ class MainWindow(QWidget):
 
         # add a search button
         searchButtonLayout = QHBoxLayout()
-        self.searchButton = QPushButton('Search')
+        self.relevant_btn = QPushButton('Search')
         # self.searchButton.move(20, 400)
-        self.searchButton.clicked.connect(self.click_search)
+        self.relevant_btn.clicked.connect(self.click_search)
         searchButtonLayout.addStretch(1)
-        searchButtonLayout.addWidget(self.searchButton)
+        searchButtonLayout.addWidget(self.relevant_btn)
         vbox.addLayout(searchButtonLayout)
 
         # add a qeury result listView
@@ -231,8 +233,8 @@ class MainWindow(QWidget):
         self.show()
 
     def _topic_selection_changed(self, topic_list):
-        print('topic selection changed')
-        print('current selection: %s' % topic_list)
+        # print('topic selection changed')
+        # print('current selection: %s' % topic_list)
         self.search_engine.set_selected_topics(topic_list)
 
     def switch_all_topic_selection(self):
@@ -277,6 +279,12 @@ class MainWindow(QWidget):
     @pyqtSlot()
     def click_search(self):
 
+        if self.relevance_memory != {}:
+            for query, tpl in self.relevance_memory.items():
+                p_doc_ids, n_doc_ids = tpl[0], tpl[1]
+                self.search_engine.add_relevance_feedback(query, p_doc_ids, n_doc_ids)
+            self.relevance_memory = {}
+
         query_string = self.query_line_edit.text().strip()
 
         # setup QMessageBox
@@ -292,6 +300,7 @@ class MainWindow(QWidget):
                 if reply == QMessageBox.Yes:
                     query_string = expanded
 
+            self.__current_query__ = query_string
             search_result = self.search_engine.query(query_string)
             self.retrieved_doc_ids, corrections, scores = search_result.doc_id_list, search_result.correction, search_result.result_scores
 
@@ -341,7 +350,27 @@ class MainWindow(QWidget):
         selected_doc_id = self.retrieved_doc_ids[selected_item_idx]
         doc_content = self.search_engine.get_doc_content(selected_doc_id)
         doc_title = self.search_engine.get_doc_title(selected_doc_id)
-        self.__display_course_details({'title': doc_title, 'content': doc_content})
+        self.__display_course_details({'title': doc_title, 'content': doc_content, 'doc_id': selected_doc_id})
+
+    def add_relevant_doc(self, doc_id: str):
+        if self.__current_query__ in self.relevance_memory.keys():
+            tpl = self.relevance_memory[self.__current_query__]
+            p_lst = tpl[0]
+            n_lst = tpl[1]
+            modified = (p_lst + [doc_id], n_lst)
+            self.relevance_memory[self.__current_query__] = modified
+        else:
+            self.relevance_memory[self.__current_query__] = ([doc_id], [])
+
+    def add_irrelevant_doc(self, doc_id: str):
+        if self.__current_query__ in self.relevance_memory.keys():
+            tpl = self.relevance_memory[self.__current_query__]
+            p_lst = tpl[0]
+            n_lst = tpl[1]
+            modified = (p_lst, n_lst + [doc_id])
+            self.relevance_memory[self.__current_query__] = modified
+        else:
+            self.relevance_memory[self.__current_query__] = ([], [doc_id])
 
     def __display_course_details(self, document):
         dialog = QDialog(parent=self)
@@ -365,8 +394,21 @@ class MainWindow(QWidget):
         hbox2.addWidget(contentLabel)
         hbox2.addWidget(content)
 
+        relevance_layout = QHBoxLayout()
+        relevant_btn = QPushButton('Yes')
+        irrelevant_btn = QPushButton('No')
+        relevance_label = QLabel('Is this document relevant?')
+        doc_id = document['doc_id']
+        relevant_btn.clicked.connect(lambda: self.add_relevant_doc(doc_id))
+        irrelevant_btn.clicked.connect(lambda: self.add_irrelevant_doc(doc_id))
+        relevance_layout.addStretch(1)
+        relevance_layout.addWidget(relevance_label)
+        relevance_layout.addWidget(relevant_btn)
+        relevance_layout.addWidget(irrelevant_btn)
+
         vbox.addLayout(hbox1)
         vbox.addLayout(hbox2)
+        vbox.addLayout(relevance_layout)
 
         dialog.setLayout(vbox)
         dialog.exec_()
