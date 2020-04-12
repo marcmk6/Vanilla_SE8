@@ -1,15 +1,16 @@
 import csv
 import os
-
+import sys
 from bs4 import BeautifulSoup
 
+sys.path.append('..')
 from global_variable import RAW_COURSE_HTML, COURSE_CORPUS, RAW_RETUERS_DIR, REUTERS_CORPUS
 
 
 def preprocess_course_corpus():
     def _separate_files(src_file):
         end = '</html>'
-        with open('../'+src_file, 'r') as f:
+        with open('../' + src_file, 'r') as f:
             files = f.read().split(end)
         return files
 
@@ -43,7 +44,7 @@ def preprocess_course_corpus():
                     else:
                         course_description_lst.append('')
 
-        with open('../'+COURSE_CORPUS, 'a', newline='') as o:
+        with open('../' + COURSE_CORPUS, 'a', newline='') as o:
             writer = csv.writer(o)
             for doc_id, name, course_description in zip(doc_id_lst, course_name, course_description_lst):
                 writer.writerow([doc_id, name, course_description])
@@ -82,5 +83,5 @@ def preprocess_reuters_corpus():
 
 
 if __name__ == '__main__':
-    # preprocess_course_corpus()
+    preprocess_course_corpus()
     preprocess_reuters_corpus()

@@ -33,6 +33,7 @@ class MainWindow(QWidget):
         self.__query_expansion__ = False
         self.relevance_memory = {}  # k: query, v:([positive doc ids], [negative doc ids])
         self.__current_query__ = ''
+        self.__relevance_collection_enabled__ = True
 
     def setup_se(self):
         # preprocess_reuters_corpus()  # TODO remove
@@ -322,9 +323,11 @@ class MainWindow(QWidget):
         if button.isChecked():
             if button.text() == BOOLEAN_MODEL_BUTTON_TEXT:
                 self.search_engine.switch_model('boolean')
+                self.__relevance_collection_enabled__ = False
                 print('Switched to boolean model')
             elif button.text() == VSM_MODEL_BUTTON_TEXT:
                 self.search_engine.switch_model('vsm')
+                self.__relevance_collection_enabled__ = True
                 print('Switched to vsm model')
             elif button.text() == 'UofO catalog':
                 # # print('Radio button '%s' is clicked.' % button.text())
@@ -394,21 +397,22 @@ class MainWindow(QWidget):
         hbox2.addWidget(contentLabel)
         hbox2.addWidget(content)
 
-        relevance_layout = QHBoxLayout()
-        relevant_btn = QPushButton('Yes')
-        irrelevant_btn = QPushButton('No')
-        relevance_label = QLabel('Is this document relevant?')
-        doc_id = document['doc_id']
-        relevant_btn.clicked.connect(lambda: self.add_relevant_doc(doc_id))
-        irrelevant_btn.clicked.connect(lambda: self.add_irrelevant_doc(doc_id))
-        relevance_layout.addStretch(1)
-        relevance_layout.addWidget(relevance_label)
-        relevance_layout.addWidget(relevant_btn)
-        relevance_layout.addWidget(irrelevant_btn)
-
         vbox.addLayout(hbox1)
         vbox.addLayout(hbox2)
-        vbox.addLayout(relevance_layout)
+
+        if self.__relevance_collection_enabled__ == True:
+            relevance_layout = QHBoxLayout()
+            relevant_btn = QPushButton('Yes')
+            irrelevant_btn = QPushButton('No')
+            relevance_label = QLabel('Is this document relevant?')
+            doc_id = document['doc_id']
+            relevant_btn.clicked.connect(lambda: self.add_relevant_doc(doc_id))
+            irrelevant_btn.clicked.connect(lambda: self.add_irrelevant_doc(doc_id))
+            relevance_layout.addStretch(1)
+            relevance_layout.addWidget(relevance_label)
+            relevance_layout.addWidget(relevant_btn)
+            relevance_layout.addWidget(irrelevant_btn)
+            vbox.addLayout(relevance_layout)
 
         dialog.setLayout(vbox)
         dialog.exec_()
