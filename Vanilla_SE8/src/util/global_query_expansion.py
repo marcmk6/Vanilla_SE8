@@ -21,10 +21,13 @@ def get_synonyms(word: str) -> set:
             tmp = [e for e in syn.lemma_names() if e.isalpha()]
             tmp = tmp[:3]
             synonyms.update(tmp)
+        else:
+            break
     return synonyms - {word}
 
 
 if __name__ == '__main__':
-    q = 'oil platform explosion'
-
-    print(expand_query_globally(q))
+    l = ['oil platform explosion',
+         'linear algebra']
+    for q in l:
+        print(expand_query_globally(q))

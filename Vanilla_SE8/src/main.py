@@ -18,6 +18,16 @@ from UI_component.qcheckcombobox import CheckComboBox
 BOOLEAN_MODEL_BUTTON_TEXT = 'Boolean Model'
 VSM_MODEL_BUTTON_TEXT = 'VSM Model'
 
+"""
+Ref:
+https://doc.qt.io/qtforpython/PySide2/QtWidgets/QLineEdit.html#PySide2.QtWidgets.PySide2.QtWidgets.QLineEdit.text
+https://stackoverflow.com/questions/22531578/make-an-action-when-the-qlineedit-text-is-changed-programmatically
+https://nachtimwald.com/2009/07/04/qcompleter-and-comma-separated-tags/
+https://stackoverflow.com/questions/46229897/pyqt5-converting-signal-code-from-pyqt4
+https://stackoverflow.com/questions/15600014/pyqt-disconnect-slots-new-style
+https://stackoverflow.com/questions/8651742/dynamically-adding-and-removing-widgets-in-pyqt
+"""
+
 
 # Inspired from https://pythonspot.com/gui/
 # Modele 1 - User Interface

@@ -51,7 +51,7 @@ def preprocess_course_corpus():
 
 
 def preprocess_reuters_corpus():
-    target_files = [f for f in os.listdir('../' + RAW_RETUERS_DIR) if f.endswith('021.sgm')]  # FIXME
+    target_files = [f for f in os.listdir('../' + RAW_RETUERS_DIR) if f.endswith('.sgm')]
     target_files = sorted(target_files)
 
     # Extract information
